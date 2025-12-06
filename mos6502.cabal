@@ -1,0 +1,139 @@
+cabal-version:      3.0
+name:               mos6502
+
+-- PVP summary:     +-+------- breaking API changes
+--                  | | +----- non-breaking API additions
+--                  | | | +--- code changes with no API change
+version:            0.0.0.1
+
+synopsis: MOS 6502 CPU core implemented in Clash HDL
+license:            GPL-3.0-or-later
+license-file:       LICENSE
+author:             Bartlomiej Stefanski
+maintainer:         stef.bartlomiej@gmail.com
+build-type:         Simple
+extra-doc-files:    README.md
+
+common warnings
+  ghc-options: -Wall
+
+common common-options
+  default-extensions:
+    -- Extensions necesitated by Clash HDL.
+    BangPatterns
+    BinaryLiterals
+    BlockArguments
+    ConstraintKinds
+    DataKinds
+    DefaultSignatures
+    DeriveAnyClass
+    DeriveDataTypeable
+    DeriveFoldable
+    DeriveFunctor
+    DeriveGeneric
+    DeriveLift
+    DeriveTraversable
+    DerivingStrategies
+    InstanceSigs
+    KindSignatures
+    LambdaCase
+    NoStarIsType
+    NumericUnderscores
+    PolyKinds
+    RankNTypes
+    ScopedTypeVariables
+    StandaloneDeriving
+    TupleSections
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+    ViewPatterns
+    TemplateHaskell
+    QuasiQuotes
+
+    -- Do not use standard haskell prelude, use Clash.Prelude instead.
+    NoImplicitPrelude
+
+  ghc-options:
+    -Wall -Wcompat
+    -haddock
+
+    -- Plugins to support type-level constraint solving on naturals
+    -fplugin GHC.TypeLits.Extra.Solver
+    -fplugin GHC.TypeLits.Normalise
+    -fplugin GHC.TypeLits.KnownNat.Solver
+
+    -- Clash needs access to the source code in compiled modules
+    -fexpose-all-unfoldings
+
+    -- Worker wrappers introduce unstable names for functions that might have
+    -- blackboxes attached for them. You can disable this, but be sure to add
+    -- a no-specialize pragma to every function with a blackbox.
+    -fno-worker-wrapper
+
+    -- Strict annotations - while sometimes preventing space leaks - trigger
+    -- optimizations Clash can't deal with. See:
+    --
+    --    https://github.com/clash-lang/clash-compiler/issues/2361
+    --
+    -- These flags disables these optimizations. Note that the fields will
+    -- remain strict.
+    -fno-unbox-small-strict-fields
+    -fno-unbox-strict-fields
+
+  build-depends:
+    base,
+    Cabal,
+    clash-prelude >= 1.8.2,
+    ghc-typelits-natnormalise,
+    ghc-typelits-extra,
+    ghc-typelits-knownnat
+
+library
+  import: common-options
+  hs-source-dirs: src
+  exposed-modules:
+    TopLevel
+    Utilities.SevenSegment
+    Utilities.Utils
+  default-language: Haskell2010
+
+executable clash
+  main-is: bin/Clash.hs
+  default-language: Haskell2010
+  Build-Depends: base, clash-ghc, mos6502
+  if !os(Windows)
+    ghc-options: -dynamic
+
+executable clashi
+  main-is: bin/Clashi.hs
+  default-language: Haskell2010
+  Build-Depends: base, clash-ghc, mos6502
+  if !os(Windows)
+    ghc-options: -dynamic
+
+test-suite doctests
+  main-is:          doctests.hs
+  type:             exitcode-stdio-1.0
+  default-language: Haskell2010
+  ghc-options:      -Wall -Wcompat -threaded
+  hs-source-dirs:   tests
+  Build-Depends: base, mos6502, doctest-parallel >= 0.2
+
+test-suite test-library
+  import: common-options
+  main-is: unittests.hs
+  type: exitcode-stdio-1.0
+  default-language: Haskell2010
+  hs-source-dirs: tests
+  ghc-options: -threaded
+  other-modules:
+    Tests.SanityCheck
+  build-depends:
+    mos6502,
+    QuickCheck,
+    clash-prelude-hedgehog,
+    hedgehog,
+    tasty >= 1.2,
+    tasty-hedgehog,
+    tasty-th

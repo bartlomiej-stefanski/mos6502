@@ -13,7 +13,8 @@
   }:
     flake-utils.lib.eachDefaultSystem (
       system: let
-        pkgs =  import nixpkgs {
+
+        pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
         };
@@ -33,57 +34,66 @@
           tasty-hedgehog
           clash-prelude-hedgehog
         ]);
+
+        # Packages only required on CI
+        ciPackages = with pkgs; [
+          haskellEnv
+          cabal-install
+
+          gnumake
+          gcc
+          pkg-config
+
+          verilator
+        ];
+
+        # Packages for development shells
+        devPackages = with pkgs; [
+          # Heavy FPGA Tools
+          quartus-prime-lite
+          openocd
+
+          # GUI & Visualization
+          gtkwave
+
+          # Language Servers & Helpers
+          haskell-language-server
+          bear
+
+          # C++ Dev
+          cmake
+          ninja
+          clang-tools
+          gtest
+          gdb
+          clang-manpages
+
+          # Python
+          python313
+          python313Packages.python-lsp-server
+
+          # Utilities
+          hexedit
+          socat
+          minicom
+        ];
+
       in {
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            # Build utilites
-            gnumake
-            cmake
-            ninja
-            bear
-            pkg-config
+        devShells = {
+          ci = pkgs.mkShell {
+            packages = ciPackages;
+          };
 
-            # Compilers
-            gcc
-            clang-manpages
-            clang-tools
+          default = pkgs.mkShell {
+            packages = ciPackages ++ devPackages;
 
-            # C++ Libraries
-            gtest
-
-            # Debugger and tools
-            gdb
-
-            # Simulation and Synthesis
-            iverilog
-            verilator
-            gtkwave
-
-            # Quartus
-            quartus-prime-lite
-            openocd
-
-            # Haskell and Clash stack
-            haskellEnv
-            cabal-install
-            haskell-language-server
-
-            # python13
-            python313
-            python313Packages.python-lsp-server
-
-            # General random utilites
-            hexedit
-            socat
-            minicom
-          ];
-
-          shellHook = ''
-            echo "Welcome to your CLASH Hardware development environment!"
-            ghc --version
-            clash --version
-            verilator --version
-          '';
+            shellHook = ''
+              echo "Welcome to your CLASH Hardware development environment!"
+              ghc --version
+              clash --version
+              verilator --version
+            '';
+          };
         };
       }
     );

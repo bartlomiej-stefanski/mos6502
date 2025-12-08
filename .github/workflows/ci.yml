@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@v16
+
+    - name: Magic Nix Cache
+      uses: DeterminateSystems/magic-nix-cache-action@v8
+
+    - name: Cabal Build
+      run: nix develop .#ci --command cabal build
+
+    - name: Cabal Test
+      run: nix develop .#ci --command cabal test

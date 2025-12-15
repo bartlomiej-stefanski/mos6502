@@ -39,6 +39,7 @@ common common-options
     LambdaCase
     NoStarIsType
     NumericUnderscores
+    PatternSynonyms
     PolyKinds
     RankNTypes
     ScopedTypeVariables
@@ -96,6 +97,7 @@ library
     TopLevel
     Utilities.SevenSegment
     Utilities.Utils
+    Cpu.Instructions
   default-language: Haskell2010
 
 executable clash

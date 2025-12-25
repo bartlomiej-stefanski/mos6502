@@ -68,13 +68,18 @@ data BranchCondition
 
 
 data ALUIO = RegA | RegX | RegY | RegSP | Memory | One
+  deriving (Show, Eq)
 data ALUConnect = ALUConnect
-  { left :: ALUIO
-  , right :: Maybe ALUIO
-  , output :: Maybe ALUIO }
+  { left :: Maybe ALUIO
+  , right :: ALUIO
+  , output :: Maybe ALUIO
+  } deriving (Show, Eq)
+
 
 data ALUBinaryOp = OR | AND | XOR
-data ALUShiftOp = ROR | ROL | ASL | LSR
+  deriving (Show, Eq)
+data ALUShiftOp = ROR | ROL | LSR | ASL
+  deriving (Show, Eq)
 
 data ALU
   = BinaryOp ALUBinaryOp
@@ -88,6 +93,7 @@ data ALU
 
   -- | Identity function applied to Register value. Updates CPU flags.
   | ID
+  deriving (Show, Eq)
 
 pattern ADC, SBC, ADD, SUB, CMP :: ALU
 pattern ADC = ALU_ADD True
@@ -302,28 +308,28 @@ decode op = case op of
   $(bitPattern "10001110") -> STX $ storeAddressing YRegOffset
 
   -- Transfer Register.
-  $(bitPattern "10001010") -> Compute ID NoAddressing ALUConnect{ left = RegX, right = Nothing, output = Just RegA }
-  $(bitPattern "10101010") -> Compute ID NoAddressing ALUConnect{ left = RegA, right = Nothing, output = Just RegX }
-  $(bitPattern "10111010") -> Compute ID NoAddressing ALUConnect{ left = RegSP, right = Nothing, output = Just RegX }
-  $(bitPattern "10011000") -> Compute ID NoAddressing ALUConnect{ left = RegY, right = Nothing, output = Just RegA }
-  $(bitPattern "10101000") -> Compute ID NoAddressing ALUConnect{ left = RegA, right = Nothing, output = Just RegY }
+  $(bitPattern "10001010") -> Compute ID NoAddressing ALUConnect{ left = Nothing, right = RegX, output = Just RegA }
+  $(bitPattern "10101010") -> Compute ID NoAddressing ALUConnect{ left = Nothing, right = RegA, output = Just RegX }
+  $(bitPattern "10111010") -> Compute ID NoAddressing ALUConnect{ left = Nothing, right = RegSP, output = Just RegX }
+  $(bitPattern "10011000") -> Compute ID NoAddressing ALUConnect{ left = Nothing, right = RegY, output = Just RegA }
+  $(bitPattern "10101000") -> Compute ID NoAddressing ALUConnect{ left = Nothing, right = RegA, output = Just RegY }
 
   -- General ALU operations: ORA, AND, EOR, ADC, LDA, CMP, SBC.
-  $(bitPattern "......01") -> Compute aluOp aluAddressing ALUConnect{ left = RegA, right = Just Memory, output = aluDest }
+  $(bitPattern "......01") -> Compute aluOp aluAddressing ALUConnect{ left = Just RegA, right = Memory, output = aluDest }
 
   -- CPX, CPY.
-  $(bitPattern "11.00.00") -> Compute CMP cmpAddressing ALUConnect{ left = cmpReg, right = Just Memory, output = Nothing }
+  $(bitPattern "11.00.00") -> Compute CMP cmpAddressing ALUConnect{ left = Just cmpReg, right = Memory, output = Nothing }
 
   -- ASL, ROL, LSR, ROR.
-  $(bitPattern "0....110") -> Compute shiftOp shiftAddressing ALUConnect{ left = Memory, right = Nothing, output = Just Memory }
-  $(bitPattern "0...1010") -> Compute shiftOp NoAddressing ALUConnect{ left = RegA, right = Nothing, output = Just RegA }
+  $(bitPattern "0....110") -> Compute shiftOp shiftAddressing ALUConnect{ left = Nothing, right = Memory, output = Just Memory }
+  $(bitPattern "0...1010") -> Compute shiftOp NoAddressing ALUConnect{ left = Nothing, right = RegA, output = Just RegA }
 
   -- INC, DEC.
-  $(bitPattern "11...110") -> Compute incDecOp incDecAddressing ALUConnect{ left = Memory, right = Just One, output = Just Memory}
+  $(bitPattern "11...110") -> Compute incDecOp incDecAddressing ALUConnect{ left = Just Memory, right = One, output = Just Memory}
 
   -- LDX, LDY.
-  $(bitPattern "101000.0") -> Compute ID Immediate ALUConnect{ left = Memory, right = Nothing, output = loadTarget }
-  $(bitPattern "101..1.0") -> Compute ID loadAddressing ALUConnect{ left = Memory, right = Nothing, output = loadTarget }
+  $(bitPattern "101000.0") -> Compute ID Immediate ALUConnect{ left = Nothing, right = Memory, output = loadTarget }
+  $(bitPattern "101..1.0") -> Compute ID loadAddressing ALUConnect{ left = Nothing, right = Memory, output = loadTarget }
 
   _ -> errorX "Unknown instruction"
 

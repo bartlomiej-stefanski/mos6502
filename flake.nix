@@ -39,6 +39,7 @@
         ciPackages = with pkgs; [
           haskellEnv
           cabal-install
+          ormolu
 
           gnumake
           gcc

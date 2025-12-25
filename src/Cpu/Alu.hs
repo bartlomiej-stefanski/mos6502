@@ -1,11 +1,9 @@
 module Cpu.Alu where
 
 import Clash.Prelude
-
-import Utilities.Utils
-import Cpu.Instructions
 import Cpu.Cpu
-
+import Cpu.Instructions
+import Utilities.Utils
 
 -- TODO: Implement BCD flag handling.
 alu :: ALU -> ArithmeticFlags -> Data -> Data -> (Data, ArithmeticFlags)
@@ -13,7 +11,7 @@ alu op flags x y = (result, newFlags)
   where
     carryFlag = fromActive (carry flags)
 
-    -- | Carry input number value for addition and subtraction.
+    -- \| Carry input number value for addition and subtraction.
     -- For addition 'carryFlag' is used on 'ADC' operation.
     -- For subtraction *by default* use 'carryInVal = 1', unless performing
     -- 'SBC' where behaviour is the same as for 'ADC'.
@@ -29,7 +27,7 @@ alu op flags x y = (result, newFlags)
     -- Use U2 properties (x - y = x + ~y + 1) for subtraction.
     addOperandY = case op of
       ALU_SUB _ -> complement y
-      _         -> y
+      _ -> y
 
     extendX, extendY, extendSumXY :: Unsigned 9
     extendX = zeroExtend x
@@ -51,37 +49,34 @@ alu op flags x y = (result, newFlags)
 
     (result, newFlags) = case op of
       ALU_ADD _ ->
-        let
-          res = sumXY
-          v = toActive signedOverflow
-          c = toActive $ testBit extendSumXY 8
-        in (res, flagsNZ{ overflow = v, carry = c })
+        let res = sumXY
+            v = toActive signedOverflow
+            c = toActive $ testBit extendSumXY 8
+         in (res, flagsNZ {overflow = v, carry = c})
       ALU_SUB _ ->
-        let
-          res = sumXY
-          v = toActive signedOverflow
-          c = toActive $ testBit extendSumXY 8
-        in (res, flagsNZ{ overflow = v, carry = c })
+        let res = sumXY
+            v = toActive signedOverflow
+            c = toActive $ testBit extendSumXY 8
+         in (res, flagsNZ {overflow = v, carry = c})
       BinaryOp binOp ->
-        let
-          res = case binOp of
-            OR  -> x .|. y
-            AND -> x .&. y
-            XOR -> x `xor` y
-        in (res, flagsNZ)
+        let res = case binOp of
+              OR -> x .|. y
+              AND -> x .&. y
+              XOR -> x `xor` y
+         in (res, flagsNZ)
       ShiftOp shiftOp ->
-        let
-          (res, shiftCarry) = case shiftOp of
-            ROR -> (bitCoerce (lowBit, highBit, middleBits), lowBit)
-            ROL -> (bitCoerce (middleBits, lowBit, highBit), highBit)
-            LSR -> (bitCoerce (False, highBit, middleBits), lowBit)
-            ASL -> (bitCoerce (middleBits, lowBit, False), highBit)
-        in (res, flagsNZ{ carry = toActive shiftCarry })
+        let (res, shiftCarry) = case shiftOp of
+              ROR -> (bitCoerce (lowBit, highBit, middleBits), lowBit)
+              ROL -> (bitCoerce (middleBits, lowBit, highBit), highBit)
+              LSR -> (bitCoerce (False, highBit, middleBits), lowBit)
+              ASL -> (bitCoerce (middleBits, lowBit, False), highBit)
+         in (res, flagsNZ {carry = toActive shiftCarry})
       ID -> (y, flagsNZ)
 
     zeroFlag = toActive (result == 0)
     negativeFlag = toActive (testBit result 7)
-    flagsNZ = flags
-      { negative = negativeFlag
-      , zero     = zeroFlag
-      }
+    flagsNZ =
+      flags
+        { negative = negativeFlag,
+          zero = zeroFlag
+        }

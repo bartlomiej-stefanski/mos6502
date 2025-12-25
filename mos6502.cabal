@@ -98,6 +98,7 @@ library
     Utilities.SevenSegment
     Utilities.Utils
     Cpu.Instructions
+    Cpu.Cpu
   default-language: Haskell2010
 
 executable clash

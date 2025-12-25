@@ -3,6 +3,9 @@ module Cpu.Instructions where
 import Clash.Prelude
 
 
+type Data = Unsigned 8
+type Addr = Unsigned 16
+
 -- | Address offsets for addressing modes.
 -- Details of interpretation depend on addressing mode.
 data AddressOffset
@@ -262,7 +265,7 @@ decodeLoadAddressing = \case
 
 
 -- | Decode first byte of the instruction into 'Instruction' type.
-decode :: Unsigned 8 -> Instruction
+decode :: Data -> Instruction
 decode op = case op of
 
   $(bitPattern "11101010") -> NOP

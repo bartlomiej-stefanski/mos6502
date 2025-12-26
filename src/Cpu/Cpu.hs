@@ -3,6 +3,10 @@ module Cpu.Cpu where
 import Clash.Prelude
 import Utilities.Utils
 
+type Data = Unsigned 8
+
+type Addr = Unsigned 16
+
 data ArithmeticFlags = ArithmeticFlags
   { negative :: Active High,
     overflow :: Active High,

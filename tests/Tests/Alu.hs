@@ -3,7 +3,6 @@ module Tests.Alu where
 import Clash.Prelude
 import Cpu.Alu
 import Cpu.Cpu
-import Cpu.Instructions
 import qualified Hedgehog as H
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range

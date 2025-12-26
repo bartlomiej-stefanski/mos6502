@@ -2,8 +2,31 @@ module Cpu.Alu where
 
 import Clash.Prelude
 import Cpu.Cpu
-import Cpu.Instructions
 import Utilities.Utils
+
+data ALUBinaryOp = OR | AND | XOR
+  deriving (Show, Eq)
+
+data ALUShiftOp = ROR | ROL | LSR | ASL
+  deriving (Show, Eq)
+
+data ALU
+  = BinaryOp ALUBinaryOp
+  | ShiftOp ALUShiftOp
+  | -- | Add (with carry).
+    ALU_ADD Bool
+  | -- | Subtract (with carry).
+    ALU_SUB Bool
+  | -- | Identity function applied to Register value. Updates CPU flags.
+    ID
+  deriving (Show, Eq)
+
+pattern ADC, SBC, ADD, SUB, CMP :: ALU
+pattern ADC = ALU_ADD True
+pattern SBC = ALU_SUB True
+pattern ADD = ALU_ADD False
+pattern SUB = ALU_SUB False
+pattern CMP = ALU_SUB False
 
 -- TODO: Implement BCD flag handling.
 alu :: ALU -> ArithmeticFlags -> Data -> Data -> (Data, ArithmeticFlags)

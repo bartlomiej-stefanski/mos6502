@@ -1,10 +1,8 @@
 module Cpu.Instructions where
 
 import Clash.Prelude
-
-type Data = Unsigned 8
-
-type Addr = Unsigned 16
+import Cpu.Alu
+import Cpu.Cpu
 
 -- | Address offsets for addressing modes.
 -- Details of interpretation depend on addressing mode.
@@ -62,30 +60,6 @@ data ALUConnect = ALUConnect
     output :: Maybe ALUIO
   }
   deriving (Show, Eq)
-
-data ALUBinaryOp = OR | AND | XOR
-  deriving (Show, Eq)
-
-data ALUShiftOp = ROR | ROL | LSR | ASL
-  deriving (Show, Eq)
-
-data ALU
-  = BinaryOp ALUBinaryOp
-  | ShiftOp ALUShiftOp
-  | -- | Add (with carry).
-    ALU_ADD Bool
-  | -- | Subtract (with carry).
-    ALU_SUB Bool
-  | -- | Identity function applied to Register value. Updates CPU flags.
-    ID
-  deriving (Show, Eq)
-
-pattern ADC, SBC, ADD, SUB, CMP :: ALU
-pattern ADC = ALU_ADD True
-pattern SBC = ALU_SUB True
-pattern ADD = ALU_ADD False
-pattern SUB = ALU_SUB False
-pattern CMP = ALU_SUB False
 
 -- | Represents all possible MOS6502 instructions.
 --

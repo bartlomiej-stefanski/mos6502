@@ -34,9 +34,11 @@ common common-options
     DeriveLift
     DeriveTraversable
     DerivingStrategies
+    GADTs
     InstanceSigs
     KindSignatures
     LambdaCase
+    MultiParamTypeClasses
     NoStarIsType
     NumericUnderscores
     PatternSynonyms
@@ -48,6 +50,7 @@ common common-options
     TypeApplications
     TypeFamilies
     TypeOperators
+    UndecidableInstances
     ViewPatterns
     TemplateHaskell
     QuasiQuotes
@@ -100,6 +103,8 @@ library
     Cpu.Instructions
     Cpu.Cpu
     Cpu.Alu
+    Cpu.Microcode
+    Cpu.Microcode.Steps
   default-language: Haskell2010
 
 executable clash

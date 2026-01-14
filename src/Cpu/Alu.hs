@@ -33,8 +33,9 @@ alu :: ALU -> ArithmeticFlags -> Data -> Data -> (Data, ArithmeticFlags)
 alu op flags x y = (result, newFlags)
   where
     carryFlag = fromActive (carry flags)
+    bcdFlag = fromActive (decimal flags)
 
-    -- \| Carry input number value for addition and subtraction.
+    -- Carry input number value for addition and subtraction.
     -- For addition 'carryFlag' is used on 'ADC' operation.
     -- For subtraction *by default* use 'carryInVal = 1', unless performing
     -- 'SBC' where behaviour is the same as for 'ADC'.
@@ -70,16 +71,32 @@ alu op flags x y = (result, newFlags)
     middleBits = slice d6 d1 y
     highBit = slice d7 d7 y == 1
 
+    -- BCD Handling Helpers.
+    halfCarry = testBit (extendX `xor` extendY `xor` extendSumXY) 4
+    binaryCarry = testBit extendSumXY 8
+
+    adcLoAdjust = (sumXY .&. 0x0F) > 9 || halfCarry
+    adcHiAdjust = sumXY > 0x99 || binaryCarry
+    -- Add 6 to each nibble that either overflowed or is above 9.
+    -- This guarantees to correct the result back into BCD range.
+    adcCorrection = (if adcLoAdjust then 0x06 else 0) .|. (if adcHiAdjust then 0x60 else 0)
+
+    sbcLoAdjust = (sumXY .&. 0x0F) > 9 || not halfCarry
+    sbcHiAdjust = sumXY > 0x99 || not binaryCarry
+    -- Add 6 to each nibble that either overflowed (by borrowing!) or is above 9.
+    -- This guarantees to correct the result back into BCD range.
+    sbcCorrection = (if sbcLoAdjust then 0x06 else 0) .|. (if sbcHiAdjust then 0x60 else 0)
+
     (result, newFlags) = case op of
       ALU_ADD _ ->
-        let res = sumXY
+        let res = if bcdFlag then sumXY + adcCorrection else sumXY
             v = toActive signedOverflow
-            c = toActive $ testBit extendSumXY 8
+            c = toActive $ if bcdFlag then adcHiAdjust else binaryCarry
          in (res, flagsNZ {overflow = v, carry = c})
       ALU_SUB _ ->
-        let res = sumXY
+        let res = if bcdFlag then sumXY - sbcCorrection else sumXY
             v = toActive signedOverflow
-            c = toActive $ testBit extendSumXY 8
+            c = toActive $ if bcdFlag then not sbcHiAdjust else binaryCarry
          in (res, flagsNZ {overflow = v, carry = c})
       BinaryOp binOp ->
         let res = case binOp of

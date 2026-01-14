@@ -53,13 +53,50 @@ prop_alu_addition = H.property do
   let resNegativeFlag = highResultBit
   let resCarryFlag = addResult >= 256
 
-  let adding_alu = alu op $ defaultArithmeticFlags {carry = toActive carryFlag}
-  let (result, flags) = adding_alu (valueToData x) (valueToData y)
+  let addingAlu = alu op $ defaultArithmeticFlags {carry = toActive carryFlag}
+  let (result, flags) = addingAlu (valueToData x) (valueToData y)
   result H.=== addResultData
   (fromActive . overflow $ flags) H.=== resOverflowFlag
   (fromActive . zero $ flags) H.=== resZeroFlag
   (fromActive . negative $ flags) H.=== resNegativeFlag
   (fromActive . carry $ flags) H.=== resCarryFlag
+
+prop_alu_bcd_addition :: H.Property
+prop_alu_bcd_addition = H.property do
+  lowX <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 9
+  highX <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 9
+  let x = lowX + 0x10 * highX
+
+  lowY <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 9
+  highY <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 9
+  let y = lowY + 0x10 * highY
+
+  op <- H.forAll $ Gen.choice [return ADC, return ADD]
+  carryFlag <- H.forAll Gen.bool
+
+  let carryAddition = case op of
+        ADC -> if carryFlag then 1 else 0
+        _ -> 0
+
+  let directAddition = x + y + carryAddition
+  let lowCorrection = (directAddition .&. 0xF) > 9 || (lowX + lowY) > 9
+  let lowCorrectionValue = if lowCorrection then 0x06 else 0x0
+  let highCorrection = directAddition > 0x99
+  let highCorrectionValue = if highCorrection then 0x60 else 0x0
+
+  let additionCorrected = directAddition + lowCorrectionValue + highCorrectionValue
+  let additionResult = fromIntegral additionCorrected :: Data
+
+  let addingAlu = alu op $ defaultArithmeticFlags {carry = toActive carryFlag, decimal = toActive True}
+  let (result, flags) = addingAlu (valueToData x) (valueToData y)
+
+  let resZeroFlag = additionResult == 0
+  let resCarryFlag = highCorrection
+
+  result H.=== additionResult
+  (fromActive . zero $ flags) H.=== resZeroFlag
+  (fromActive . carry $ flags) H.=== resCarryFlag
+  (fromActive . decimal $ flags) H.=== True
 
 prop_alu_subtraction :: H.Property
 prop_alu_subtraction = H.property do
@@ -92,13 +129,54 @@ prop_alu_subtraction = H.property do
   -- In MOS 6502 the carry flag is set to '1' on subtraction when operation did not need a borrow.
   let resCarryFlag = xExtend >= (yExtend + fromInteger carrySubtract)
 
-  let sub_alu = alu op $ defaultArithmeticFlags {carry = toActive carryFlag}
-  let (result, flags) = sub_alu (valueToData x) (valueToData y)
+  let subAlu = alu op $ defaultArithmeticFlags {carry = toActive carryFlag}
+  let (result, flags) = subAlu (valueToData x) (valueToData y)
   result H.=== subResultData
   (fromActive . overflow $ flags) H.=== resOverflowFlag
   (fromActive . zero $ flags) H.=== resZeroFlag
   (fromActive . negative $ flags) H.=== resNegativeFlag
   (fromActive . carry $ flags) H.=== resCarryFlag
+
+prop_alu_bcd_subtraction :: H.Property
+prop_alu_bcd_subtraction = H.property do
+  lowX <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 9
+  highX <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 9
+  let x = lowX + 0x10 * highX
+
+  lowY <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 9
+  highY <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 9
+  let y = lowY + 0x10 * highY
+
+  op <- H.forAll $ Gen.choice $ Prelude.map return [SBC, SUB]
+  carryFlag <- H.forAll Gen.bool
+
+  let carrySubtract = case op of
+        SBC -> if carryFlag then 0 else 1
+        _ -> 0
+
+  let lowCorrection = lowX < lowY + carrySubtract
+  let lowCorrectionValue = if lowCorrection then 10 else 0
+  let borrowHigh = if lowCorrection then 1 else 0
+  let correctedLow = lowX + lowCorrectionValue - (lowY + carrySubtract)
+
+  let highCorrection = highX - borrowHigh < highY
+  let highCorrectionValue = if highCorrection then 10 else 0
+  let correctedHigh = highX - borrowHigh + highCorrectionValue - highY
+
+  let additionCorrected = correctedLow + 16 * correctedHigh
+  let additionResult = fromIntegral additionCorrected :: Data
+
+  let subtractingAlu = alu op $ defaultArithmeticFlags {carry = toActive carryFlag, decimal = toActive True}
+  let (result, flags) = subtractingAlu (valueToData x) (valueToData y)
+
+  let resZeroFlag = additionResult == 0
+  -- Carry flag for subtractions are set when *no* borrow occurs.
+  let resCarryFlag = not highCorrection
+
+  result H.=== additionResult
+  (fromActive . zero $ flags) H.=== resZeroFlag
+  (fromActive . carry $ flags) H.=== resCarryFlag
+  (fromActive . decimal $ flags) H.=== True
 
 setNZ :: ArithmeticFlags -> Data -> ArithmeticFlags
 setNZ flags res =

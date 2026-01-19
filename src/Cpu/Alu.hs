@@ -47,7 +47,6 @@ pattern ADD = ALU_ADD False
 pattern SUB = ALU_SUB False
 pattern CMP = ALU_SUB False
 
--- TODO: Implement BCD flag handling.
 alu :: ALU -> ArithmeticFlags -> Data -> Data -> (Data, ArithmeticFlags)
 alu op flags x y = (result, newFlags)
   where

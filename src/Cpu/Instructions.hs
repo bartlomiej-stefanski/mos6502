@@ -13,12 +13,11 @@ data AddressOffset
     XRegOffset
   | -- | Offset is given by Y register.
     YRegOffset
+  deriving (Eq, Show)
 
 -- | Defines possible instruction addressing modes.
 data AddressingMode
-  = -- | Operation on A register.
-    Accumulator
-  | -- | Operation on value provided in instruction.
+  = -- | Operation on value provided in instruction.
     Immediate
   | -- | Operation on memory, address is PC plus signed single-byte offset.
     Relative
@@ -29,8 +28,12 @@ data AddressingMode
     Indirect AddressOffset
   | -- | Operation on zero-page memory.
     ZeroPage AddressOffset
-  | -- | Addressing not used.
-    NoAddressing
+  | -- | Addressing implied by operation or unused.
+    Implied
+  deriving (Eq, Show)
+
+undefinedAddressingMode :: AddressingMode
+undefinedAddressingMode = errorX "Undefined addressing mode"
 
 -- | Branch conditions for BRANCH instruction.
 data BranchCondition
@@ -50,6 +53,7 @@ data BranchCondition
     OnNotEqual
   | -- | Take branch when Z flag is 1.
     OnEqual
+  deriving (Eq, Show)
 
 data ALUIO = RegA | RegX | RegY | RegSP | Memory | One
   deriving (Show, Eq)
@@ -109,7 +113,7 @@ data Instruction
   | {- Jump Operations -}
 
     -- | Jump to new location.
-    JMP AddressingMode
+    JMP
   | -- | Jump to relative address if condition is true.
     BRANCH BranchCondition
   | {- Arithmetic Operations -}
@@ -120,16 +124,17 @@ data Instruction
     -- Loads from memory will use 'AddressingMode'.
     -- Calculation will update flags and save the result to chosen destination.
     --
-    -- Note that for operations that do not use memory the 'AddressingMode' should be set to 'NoAddressing'.
-    Compute ALU AddressingMode ALUConnect
+    -- Note that for operations that do not use memory the 'AddressingMode' should be set to 'Implied'.
+    Compute ALU ALUConnect
   | {- Store Operations -}
 
     -- | Store A register to memory.
-    STA AddressingMode
+    STA
   | -- | Store X register to memory.
-    STX AddressingMode
+    STX
   | -- | Store Y register to memory.
-    STY AddressingMode
+    STY
+  deriving (Eq, Show)
 
 decodeBranch :: BitVector 3 -> BranchCondition
 decodeBranch = \case
@@ -200,48 +205,48 @@ decodeLoadAddressing = \case
   _ -> errorX "Impossible: loadAddressing"
 
 -- | Decode first byte of the instruction into 'Instruction' type.
-decode :: Data -> Instruction
+decode :: Data -> (Instruction, AddressingMode)
 decode op = case op of
-  $(bitPattern "11101010") -> NOP
-  $(bitPattern "00001000") -> PHP
-  $(bitPattern "01101000") -> PLP
-  $(bitPattern "10011010") -> TXS
-  $(bitPattern "00111000") -> SEC
-  $(bitPattern "00011000") -> CLC
-  $(bitPattern "11111000") -> SED
-  $(bitPattern "11011000") -> CLD
-  $(bitPattern "10111000") -> CLV
-  $(bitPattern "01111000") -> SEI
-  $(bitPattern "01011000") -> CLI
-  $(bitPattern "00100000") -> JSR
-  $(bitPattern "01100000") -> RTS
-  $(bitPattern "00000000") -> BRK
-  $(bitPattern "01000000") -> RTI
-  $(bitPattern "01.01100") -> JMP jumpAddressing
-  $(bitPattern "...10000") -> BRANCH branch
-  $(bitPattern "010...01") -> STA aluAddressing
-  $(bitPattern "100.0100") -> STY $ storeAddressing XRegOffset
-  $(bitPattern "100.0110") -> STX $ storeAddressing YRegOffset
-  $(bitPattern "10001100") -> STY $ storeAddressing XRegOffset
-  $(bitPattern "10001110") -> STX $ storeAddressing YRegOffset
+  $(bitPattern "11101010") -> (NOP, undefinedAddressingMode)
+  $(bitPattern "00001000") -> (PHP, undefinedAddressingMode)
+  $(bitPattern "01101000") -> (PLP, undefinedAddressingMode)
+  $(bitPattern "10011010") -> (TXS, undefinedAddressingMode)
+  $(bitPattern "00111000") -> (SEC, undefinedAddressingMode)
+  $(bitPattern "00011000") -> (CLC, undefinedAddressingMode)
+  $(bitPattern "11111000") -> (SED, undefinedAddressingMode)
+  $(bitPattern "11011000") -> (CLD, undefinedAddressingMode)
+  $(bitPattern "10111000") -> (CLV, undefinedAddressingMode)
+  $(bitPattern "01111000") -> (SEI, undefinedAddressingMode)
+  $(bitPattern "01011000") -> (CLI, undefinedAddressingMode)
+  $(bitPattern "00100000") -> (JSR, undefinedAddressingMode)
+  $(bitPattern "01100000") -> (RTS, undefinedAddressingMode)
+  $(bitPattern "00000000") -> (BRK, undefinedAddressingMode)
+  $(bitPattern "01000000") -> (RTI, undefinedAddressingMode)
+  $(bitPattern "01.01100") -> (JMP, jumpAddressing)
+  $(bitPattern "...10000") -> (BRANCH branch, undefinedAddressingMode)
+  $(bitPattern "010...01") -> (STA, aluAddressing)
+  $(bitPattern "100.0100") -> (STY, storeAddressing XRegOffset)
+  $(bitPattern "100.0110") -> (STX, storeAddressing YRegOffset)
+  $(bitPattern "10001100") -> (STY, storeAddressing XRegOffset)
+  $(bitPattern "10001110") -> (STX, storeAddressing YRegOffset)
   -- Transfer Register.
-  $(bitPattern "10001010") -> Compute ID NoAddressing ALUConnect {left = Nothing, right = RegX, output = Just RegA}
-  $(bitPattern "10101010") -> Compute ID NoAddressing ALUConnect {left = Nothing, right = RegA, output = Just RegX}
-  $(bitPattern "10111010") -> Compute ID NoAddressing ALUConnect {left = Nothing, right = RegSP, output = Just RegX}
-  $(bitPattern "10011000") -> Compute ID NoAddressing ALUConnect {left = Nothing, right = RegY, output = Just RegA}
-  $(bitPattern "10101000") -> Compute ID NoAddressing ALUConnect {left = Nothing, right = RegA, output = Just RegY}
+  $(bitPattern "10001010") -> (Compute ID ALUConnect {left = Nothing, right = RegX, output = Just RegA}, Implied)
+  $(bitPattern "10101010") -> (Compute ID ALUConnect {left = Nothing, right = RegA, output = Just RegX}, Implied)
+  $(bitPattern "10111010") -> (Compute ID ALUConnect {left = Nothing, right = RegSP, output = Just RegX}, Implied)
+  $(bitPattern "10011000") -> (Compute ID ALUConnect {left = Nothing, right = RegY, output = Just RegA}, Implied)
+  $(bitPattern "10101000") -> (Compute ID ALUConnect {left = Nothing, right = RegA, output = Just RegY}, Implied)
   -- General ALU operations: ORA, AND, EOR, ADC, LDA, CMP, SBC.
-  $(bitPattern "......01") -> Compute aluOp aluAddressing ALUConnect {left = Just RegA, right = Memory, output = aluDest}
+  $(bitPattern "......01") -> (Compute aluOp ALUConnect {left = Just RegA, right = Memory, output = aluDest}, aluAddressing)
   -- CPX, CPY.
-  $(bitPattern "11.00.00") -> Compute CMP cmpAddressing ALUConnect {left = Just cmpReg, right = Memory, output = Nothing}
+  $(bitPattern "11.00.00") -> (Compute CMP ALUConnect {left = Just cmpReg, right = Memory, output = Nothing}, cmpAddressing)
   -- ASL, ROL, LSR, ROR.
-  $(bitPattern "0....110") -> Compute shiftOp shiftAddressing ALUConnect {left = Nothing, right = Memory, output = Just Memory}
-  $(bitPattern "0...1010") -> Compute shiftOp NoAddressing ALUConnect {left = Nothing, right = RegA, output = Just RegA}
+  $(bitPattern "0....110") -> (Compute shiftOp ALUConnect {left = Nothing, right = Memory, output = Just Memory}, shiftAddressing)
+  $(bitPattern "0...1010") -> (Compute shiftOp ALUConnect {left = Nothing, right = RegA, output = Just RegA}, Implied)
   -- INC, DEC.
-  $(bitPattern "11...110") -> Compute incDecOp incDecAddressing ALUConnect {left = Just Memory, right = One, output = Just Memory}
+  $(bitPattern "11...110") -> (Compute incDecOp ALUConnect {left = Just Memory, right = One, output = Just Memory}, incDecAddressing)
   -- LDX, LDY.
-  $(bitPattern "101000.0") -> Compute ID Immediate ALUConnect {left = Nothing, right = Memory, output = loadTarget}
-  $(bitPattern "101..1.0") -> Compute ID loadAddressing ALUConnect {left = Nothing, right = Memory, output = loadTarget}
+  $(bitPattern "101000.0") -> (Compute ID ALUConnect {left = Nothing, right = Memory, output = loadTarget}, Immediate)
+  $(bitPattern "101..1.0") -> (Compute ID ALUConnect {left = Nothing, right = Memory, output = loadTarget}, loadAddressing)
   _ -> errorX "Unknown instruction"
   where
     jumpAddressing = if testBit op 5 then Indirect None else Absolute None

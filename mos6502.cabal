@@ -101,6 +101,7 @@ library
     Cpu.Cpu
     Cpu.Alu
     Cpu.CpuState
+    Cpu.Microcode
   default-language: Haskell2010
 
 executable clash

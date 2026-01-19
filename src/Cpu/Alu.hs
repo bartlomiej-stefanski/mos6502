@@ -4,6 +4,25 @@ import Clash.Prelude
 import Cpu.Cpu
 import Utilities.Utils
 
+data ArithmeticFlags = ArithmeticFlags
+  { negative :: Active High,
+    overflow :: Active High,
+    decimal :: Active High,
+    zero :: Active High,
+    carry :: Active High
+  }
+  deriving (Eq, Show)
+
+defaultArithmeticFlags :: ArithmeticFlags
+defaultArithmeticFlags =
+  ArithmeticFlags
+    { negative = toActive False,
+      overflow = toActive False,
+      decimal = toActive False,
+      zero = toActive False,
+      carry = toActive False
+    }
+
 data ALUBinaryOp = OR | AND | XOR
   deriving (Show, Eq)
 

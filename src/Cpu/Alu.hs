@@ -11,7 +11,7 @@ data ArithmeticFlags = ArithmeticFlags
     zero :: Active High,
     carry :: Active High
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)
 
 defaultArithmeticFlags :: ArithmeticFlags
 defaultArithmeticFlags =
@@ -24,10 +24,10 @@ defaultArithmeticFlags =
     }
 
 data ALUBinaryOp = OR | AND | XOR
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, NFDataX)
 
 data ALUShiftOp = ROR | ROL | LSR | ASL
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, NFDataX)
 
 data ALU
   = BinaryOp ALUBinaryOp
@@ -38,7 +38,7 @@ data ALU
     ALU_SUB Bool
   | -- | Identity function applied to Register value. Updates CPU flags.
     ID
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, NFDataX)
 
 pattern ADC, SBC, ADD, SUB, CMP :: ALU
 pattern ADC = ALU_ADD True

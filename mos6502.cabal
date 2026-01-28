@@ -85,6 +85,7 @@ common common-options
   build-depends:
     base,
     Cabal,
+    mtl,
     clash-prelude >= 1.8.2,
     ghc-typelits-natnormalise,
     ghc-typelits-extra,
@@ -102,6 +103,7 @@ library
     Cpu.Alu
     Cpu.CpuState
     Cpu.Microcode
+    Cpu.Executor
   default-language: Haskell2010
 
 executable clash

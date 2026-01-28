@@ -37,33 +37,33 @@ executeCpuInstruction dataOnBus = do
 
   let no_data = return $ errorX "No Data"
 
-  case instruction cpuState of
+  case _instruction cpuState of
     TXS -> do
-      modify $ \s -> s { regSP = regX s }
+      modify $ \s -> s { _regSP = _regX s }
       no_data
     SEC -> do
-      modify $ \s -> changeFlags (changeArithFlag (\f -> f { carry = toActive True})) s
+      modify $ \s -> changeFlags (changeArithFlag (\f -> f { _carry = toActive True})) s
       no_data
     CLC -> do
-      modify $ \s -> changeFlags (changeArithFlag (\f -> f { carry = toActive False})) s
+      modify $ \s -> changeFlags (changeArithFlag (\f -> f { _carry = toActive False})) s
       no_data
     SED -> do
-      modify $ \s -> changeFlags (changeArithFlag (\f -> f { decimal = toActive True})) s
+      modify $ \s -> changeFlags (changeArithFlag (\f -> f { _decimal = toActive True})) s
       no_data
     CLD -> do
-      modify $ \s -> changeFlags (changeArithFlag (\f -> f { decimal = toActive False})) s
+      modify $ \s -> changeFlags (changeArithFlag (\f -> f { _decimal = toActive False})) s
       no_data
     CLV -> do
-      modify $ \s -> changeFlags (changeArithFlag (\f -> f { overflow = toActive False})) s
+      modify $ \s -> changeFlags (changeArithFlag (\f -> f { _overflow = toActive False})) s
       no_data
     SEI -> do
-      modify $ \s -> changeFlags (\f -> f { interrupt = toActive True}) s
+      modify $ \s -> changeFlags (\f -> f { _interrupt = toActive True}) s
       no_data
     CLI -> do
-      modify $ \s -> changeFlags (\f -> f { interrupt = toActive False}) s
+      modify $ \s -> changeFlags (\f -> f { _interrupt = toActive False}) s
       no_data
     JMP -> do
-      modify $ \s -> s { regPC = bitCoerce (dataOnBus, dataLatch s) }
+      modify $ \s -> s { _regPC = bitCoerce (dataOnBus, _dataLatch s) }
       no_data
     BRANCH branchCondition ->
       errorX "Not Implemented"
@@ -72,12 +72,12 @@ executeCpuInstruction dataOnBus = do
     _ -> no_data
 
   where
-    changeFlags op _cpuState = _cpuState { cpuFlags = op (cpuFlags _cpuState) }
+    changeFlags op _cpuState = _cpuState { _cpuFlags = op (_cpuFlags _cpuState) }
 
     changeArithFlag op flags =
-      flags { arithmeticFlags = newArithFlags  }
+      flags { _arithmeticFlags = newArithFlags  }
       where
-        currArithFlags = arithmeticFlags flags
+        currArithFlags = _arithmeticFlags flags
         newArithFlags = op currArithFlags
 
 
@@ -86,8 +86,8 @@ cpuLogic :: InputData -> CpuM OutputData
 cpuLogic (InputData dataOnBus op) = do
   initialState <- get
   let nextAddress = case microOpBusAddress of
-        PC -> regPC initialState
-        SP -> stackOffset + zeroExtend (regSP initialState)
+        PC -> _regPC initialState
+        SP -> stackOffset + zeroExtend (_regSP initialState)
         COMPUTE_FROM_MODE -> getAddressFromMode initialState
 
   let outputData =
@@ -98,18 +98,18 @@ cpuLogic (InputData dataOnBus op) = do
           }
 
   modify $ \s -> case opReadData of
-    Just DATA_READ_PC_LOW -> s {dataLatch = dataOnBus}
+    Just DATA_READ_PC_LOW -> s {_dataLatch = dataOnBus}
     Just DATA_READ_PC_HIGH ->
-      s {regPC = bitCoerce (dataOnBus, dataLatch s)}
+      s {_regPC = bitCoerce (dataOnBus, _dataLatch s)}
     _ -> s
 
   case microCmd of
     CmdDecodeOpcode -> do
       modify $ \s ->
         s
-          { instruction = nextInstruction,
-            addressingMode = nextAddressingMode,
-            regPC = regPC s + 1
+          { _instruction = nextInstruction,
+            _addressingMode = nextAddressingMode,
+            _regPC = _regPC s + 1
           }
       return outputData
     CmdNOP -> do
@@ -118,10 +118,10 @@ cpuLogic (InputData dataOnBus op) = do
       aluData <- executeCpuInstruction dataOnBus
       return outputData
   where
-    microCmd = cmd op
-    opOnBus = busOp op
-    microOpBusAddress = address opOnBus
-    opReadData = readData opOnBus
+    microCmd = _cmd op
+    opOnBus = _busOp op
+    microOpBusAddress = _address opOnBus
+    opReadData = _readData opOnBus
 
     (nextInstruction, nextAddressingMode) = decode dataOnBus
 

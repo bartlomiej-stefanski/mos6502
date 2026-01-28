@@ -7,31 +7,31 @@ import Cpu.Instructions
 import Utilities.Utils
 
 data CpuFlags = CpuFlags
-  { arithmeticFlags :: ArithmeticFlags,
-    brk :: Active High,
-    interrupt :: Active High
+  { _arithmeticFlags :: ArithmeticFlags,
+    _brk :: Active High,
+    _interrupt :: Active High
   }
   deriving (Eq, Show, Generic, NFDataX)
 
 defaultCpuFlags :: CpuFlags
 defaultCpuFlags =
   CpuFlags
-    { arithmeticFlags = defaultArithmeticFlags,
-      brk = toActive False,
-      interrupt = toActive False
+    { _arithmeticFlags = defaultArithmeticFlags,
+      _brk = toActive False,
+      _interrupt = toActive False
     }
 
 data CpuState
   = CpuState
-  { regA, regX, regY :: Data,
-    regSP :: Data,
-    regPC :: Addr,
-    cpuFlags :: CpuFlags,
-    dataLatch :: Data,
+  { _regA, _regX, _regY :: Data,
+    _regSP :: Data,
+    _regPC :: Addr,
+    _cpuFlags :: CpuFlags,
+    _dataLatch :: Data,
     -- | Instruction currently being executed.
-    instruction :: Instruction,
+    _instruction :: Instruction,
     -- | Addressing mode for current instruction.
-    addressingMode :: AddressingMode
+    _addressingMode :: AddressingMode
     -- TODO: Include microcode ROM address.
   }
   deriving (Eq, Show, Generic, NFDataX)
@@ -39,15 +39,15 @@ data CpuState
 initCpuState :: CpuState
 initCpuState =
   CpuState
-    { regA = 0,
-      regX = 0,
-      regY = 0,
-      regSP = 0xFF,
-      regPC = 0x0000,
-      cpuFlags = defaultCpuFlags,
-      dataLatch = 0,
-      instruction = NOP,
-      addressingMode = Implied
+    { _regA = 0,
+      _regX = 0,
+      _regY = 0,
+      _regSP = 0xFF,
+      _regPC = 0x0000,
+      _cpuFlags = defaultCpuFlags,
+      _dataLatch = 0,
+      _instruction = NOP,
+      _addressingMode = Implied
     }
 
 stackOffset :: Addr

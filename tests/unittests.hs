@@ -1,6 +1,7 @@
 import Test.Tasty
 import Test.Tasty.Hedgehog
 import qualified Tests.Alu
+import qualified Tests.CpuExecutor
 import qualified Tests.SanityCheck
 import Prelude
 
@@ -10,7 +11,8 @@ main =
     testGroup
       "."
       [ testTreeLimit 1 Tests.SanityCheck.amISane,
-        testTreeLimit 10000 Tests.Alu.aluTests
+        testTreeLimit 10000 Tests.Alu.aluTests,
+        testTreeLimit 100000 Tests.CpuExecutor.cpuExecutorTests
       ]
   where
     testTreeLimit n = localOption (HedgehogTestLimit (Just n))

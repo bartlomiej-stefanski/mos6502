@@ -7,31 +7,31 @@ import Cpu.Instructions
 import Utilities.Utils
 
 data CpuFlags = CpuFlags
-  { arithmeticFlags :: ArithmeticFlags,
-    brk :: Active High,
-    interrupt :: Active High
+  { _arithmeticFlags :: ArithmeticFlags,
+    _brk :: Active High,
+    _interrupt :: Active High
   }
   deriving (Eq, Show, Generic, NFDataX)
 
 defaultCpuFlags :: CpuFlags
 defaultCpuFlags =
   CpuFlags
-    { arithmeticFlags = defaultArithmeticFlags,
-      brk = toActive False,
-      interrupt = toActive False
+    { _arithmeticFlags = defaultArithmeticFlags,
+      _brk = toActive False,
+      _interrupt = toActive False
     }
 
 data CpuState
   = CpuState
-  { regA, regX, regY :: Data,
-    regSP :: Data,
-    regPC :: Addr,
-    cpuFlags :: CpuFlags,
-    dataLatch :: Data,
+  { _regA, _regX, _regY :: Data,
+    _regSP :: Data,
+    _regPC :: Addr,
+    _cpuFlags :: CpuFlags,
+    _dataLatch :: Data,
     -- | Instruction currently being executed.
-    instruction :: Instruction,
+    _instruction :: Instruction,
     -- | Addressing mode for current instruction.
-    addressingMode :: AddressingMode
+    _addressingMode :: AddressingMode
     -- TODO: Include microcode ROM address.
   }
   deriving (Eq, Show, Generic, NFDataX)

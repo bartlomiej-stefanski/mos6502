@@ -5,22 +5,22 @@ import Cpu.Cpu
 import Utilities.Utils
 
 data ArithmeticFlags = ArithmeticFlags
-  { negative :: Active High,
-    overflow :: Active High,
-    decimal :: Active High,
-    zero :: Active High,
-    carry :: Active High
+  { _negative :: Active High,
+    _overflow :: Active High,
+    _decimal :: Active High,
+    _zero :: Active High,
+    _carry :: Active High
   }
   deriving (Eq, Show, Generic, NFDataX)
 
 defaultArithmeticFlags :: ArithmeticFlags
 defaultArithmeticFlags =
   ArithmeticFlags
-    { negative = toActive False,
-      overflow = toActive False,
-      decimal = toActive False,
-      zero = toActive False,
-      carry = toActive False
+    { _negative = toActive False,
+      _overflow = toActive False,
+      _decimal = toActive False,
+      _zero = toActive False,
+      _carry = toActive False
     }
 
 data ALUBinaryOp = OR | AND | XOR
@@ -50,8 +50,8 @@ pattern CMP = ALU_SUB False
 alu :: ALU -> ArithmeticFlags -> Data -> Data -> (Data, ArithmeticFlags)
 alu op flags x y = (result, newFlags)
   where
-    carryFlag = fromActive (carry flags)
-    bcdFlag = fromActive (decimal flags)
+    carryFlag = fromActive (_carry flags)
+    bcdFlag = fromActive (_decimal flags)
 
     -- Carry input number value for addition and subtraction.
     -- For addition 'carryFlag' is used on 'ADC' operation.
@@ -110,12 +110,12 @@ alu op flags x y = (result, newFlags)
         let res = if bcdFlag then sumXY + adcCorrection else sumXY
             v = toActive signedOverflow
             c = toActive $ if bcdFlag then adcHiAdjust else binaryCarry
-         in (res, flagsNZ {overflow = v, carry = c})
+         in (res, flagsNZ {_overflow = v, _carry = c})
       ALU_SUB _ ->
         let res = if bcdFlag then sumXY - sbcCorrection else sumXY
             v = toActive signedOverflow
             c = toActive $ if bcdFlag then not sbcHiAdjust else binaryCarry
-         in (res, flagsNZ {overflow = v, carry = c})
+         in (res, flagsNZ {_overflow = v, _carry = c})
       BinaryOp binOp ->
         let res = case binOp of
               OR -> x .|. y
@@ -128,13 +128,13 @@ alu op flags x y = (result, newFlags)
               ROL -> (bitCoerce (middleBits, lowBit, highBit), highBit)
               LSR -> (bitCoerce (False, highBit, middleBits), lowBit)
               ASL -> (bitCoerce (middleBits, lowBit, False), highBit)
-         in (res, flagsNZ {carry = toActive shiftCarry})
+         in (res, flagsNZ {_carry = toActive shiftCarry})
       ID -> (y, flagsNZ)
 
     zeroFlag = toActive (result == 0)
     negativeFlag = toActive (testBit result 7)
     flagsNZ =
       flags
-        { negative = negativeFlag,
-          zero = zeroFlag
+        { _negative = negativeFlag,
+          _zero = zeroFlag
         }

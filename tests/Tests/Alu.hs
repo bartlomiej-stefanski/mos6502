@@ -53,13 +53,13 @@ prop_alu_addition = H.property do
   let resNegativeFlag = highResultBit
   let resCarryFlag = addResult >= 256
 
-  let addingAlu = alu op $ defaultArithmeticFlags {carry = toActive carryFlag}
+  let addingAlu = alu op $ defaultArithmeticFlags {_carry = toActive carryFlag}
   let (result, flags) = addingAlu (valueToData x) (valueToData y)
   result H.=== addResultData
-  (fromActive . overflow $ flags) H.=== resOverflowFlag
-  (fromActive . zero $ flags) H.=== resZeroFlag
-  (fromActive . negative $ flags) H.=== resNegativeFlag
-  (fromActive . carry $ flags) H.=== resCarryFlag
+  (fromActive . _overflow $ flags) H.=== resOverflowFlag
+  (fromActive . _zero $ flags) H.=== resZeroFlag
+  (fromActive . _negative $ flags) H.=== resNegativeFlag
+  (fromActive . _carry $ flags) H.=== resCarryFlag
 
 prop_alu_bcd_addition :: H.Property
 prop_alu_bcd_addition = H.property do
@@ -87,16 +87,16 @@ prop_alu_bcd_addition = H.property do
   let additionCorrected = directAddition + lowCorrectionValue + highCorrectionValue
   let additionResult = fromIntegral additionCorrected :: Data
 
-  let addingAlu = alu op $ defaultArithmeticFlags {carry = toActive carryFlag, decimal = toActive True}
+  let addingAlu = alu op $ defaultArithmeticFlags {_carry = toActive carryFlag, _decimal = toActive True}
   let (result, flags) = addingAlu (valueToData x) (valueToData y)
 
   let resZeroFlag = additionResult == 0
   let resCarryFlag = highCorrection
 
   result H.=== additionResult
-  (fromActive . zero $ flags) H.=== resZeroFlag
-  (fromActive . carry $ flags) H.=== resCarryFlag
-  (fromActive . decimal $ flags) H.=== True
+  (fromActive . _zero $ flags) H.=== resZeroFlag
+  (fromActive . _carry $ flags) H.=== resCarryFlag
+  (fromActive . _decimal $ flags) H.=== True
 
 prop_alu_subtraction :: H.Property
 prop_alu_subtraction = H.property do
@@ -129,13 +129,13 @@ prop_alu_subtraction = H.property do
   -- In MOS 6502 the carry flag is set to '1' on subtraction when operation did not need a borrow.
   let resCarryFlag = xExtend >= (yExtend + fromInteger carrySubtract)
 
-  let subAlu = alu op $ defaultArithmeticFlags {carry = toActive carryFlag}
+  let subAlu = alu op $ defaultArithmeticFlags {_carry = toActive carryFlag}
   let (result, flags) = subAlu (valueToData x) (valueToData y)
   result H.=== subResultData
-  (fromActive . overflow $ flags) H.=== resOverflowFlag
-  (fromActive . zero $ flags) H.=== resZeroFlag
-  (fromActive . negative $ flags) H.=== resNegativeFlag
-  (fromActive . carry $ flags) H.=== resCarryFlag
+  (fromActive . _overflow $ flags) H.=== resOverflowFlag
+  (fromActive . _zero $ flags) H.=== resZeroFlag
+  (fromActive . _negative $ flags) H.=== resNegativeFlag
+  (fromActive . _carry $ flags) H.=== resCarryFlag
 
 prop_alu_bcd_subtraction :: H.Property
 prop_alu_bcd_subtraction = H.property do
@@ -166,7 +166,7 @@ prop_alu_bcd_subtraction = H.property do
   let additionCorrected = correctedLow + 16 * correctedHigh
   let additionResult = fromIntegral additionCorrected :: Data
 
-  let subtractingAlu = alu op $ defaultArithmeticFlags {carry = toActive carryFlag, decimal = toActive True}
+  let subtractingAlu = alu op $ defaultArithmeticFlags {_carry = toActive carryFlag, _decimal = toActive True}
   let (result, flags) = subtractingAlu (valueToData x) (valueToData y)
 
   let resZeroFlag = additionResult == 0
@@ -174,15 +174,15 @@ prop_alu_bcd_subtraction = H.property do
   let resCarryFlag = not highCorrection
 
   result H.=== additionResult
-  (fromActive . zero $ flags) H.=== resZeroFlag
-  (fromActive . carry $ flags) H.=== resCarryFlag
-  (fromActive . decimal $ flags) H.=== True
+  (fromActive . _zero $ flags) H.=== resZeroFlag
+  (fromActive . _carry $ flags) H.=== resCarryFlag
+  (fromActive . _decimal $ flags) H.=== True
 
 setNZ :: ArithmeticFlags -> Data -> ArithmeticFlags
 setNZ flags res =
   flags
-    { negative = toActive (testBit res 7),
-      zero = toActive (res == 0)
+    { _negative = toActive (testBit res 7),
+      _zero = toActive (res == 0)
     }
 
 nzOpTest :: ALU -> (forall a. (Bits a) => a -> a -> a) -> H.Property
@@ -191,7 +191,7 @@ nzOpTest op opFunc = H.property do
   y <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
   -- These operations should not affect the carry flag.
   carryFlag <- H.forAll Gen.bool
-  let arithmeticFlagsCarry = defaultArithmeticFlags {carry = toActive carryFlag}
+  let arithmeticFlagsCarry = defaultArithmeticFlags {_carry = toActive carryFlag}
   let opAlu = alu op arithmeticFlagsCarry
   let (result, flags) = opAlu (valueToData x) (valueToData y)
   let expectedResult = fromIntegral $ opFunc x y :: Data
@@ -217,7 +217,7 @@ shiftOpTest shiftOp opFunc = H.property do
   let shiftAlu = alu (ShiftOp shiftOp) defaultArithmeticFlags
   let (result, flags) = shiftAlu (valueToData x) (valueToData y)
   let (expectedResult, carryFlag) = opFunc (fromIntegral y :: Data)
-  let expectedFlagsCarry = defaultArithmeticFlags {carry = toActive carryFlag}
+  let expectedFlagsCarry = defaultArithmeticFlags {_carry = toActive carryFlag}
   result H.=== expectedResult
   flags H.=== setNZ expectedFlagsCarry expectedResult
 
@@ -243,9 +243,9 @@ prop_alu_ops_do_not_change_decimal_flag = H.property do
   y <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
   op <- H.forAll $ Gen.choice $ Prelude.map return aluOps
   decimalFlag <- H.forAll Gen.bool
-  let aluOp = alu op $ defaultArithmeticFlags {decimal = toActive decimalFlag}
+  let aluOp = alu op $ defaultArithmeticFlags {_decimal = toActive decimalFlag}
   let (_, flags) = aluOp (valueToData x) (valueToData y)
-  (fromActive . decimal $ flags) H.=== decimalFlag
+  (fromActive . _decimal $ flags) H.=== decimalFlag
 
 prop_alu_binary_ops_do_not_change_overflow_flag :: H.Property
 prop_alu_binary_ops_do_not_change_overflow_flag = H.property do
@@ -253,9 +253,9 @@ prop_alu_binary_ops_do_not_change_overflow_flag = H.property do
   y <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
   op <- H.forAll $ Gen.choice $ Prelude.map return bitOps
   overflowFlag <- H.forAll Gen.bool
-  let aluOp = alu op $ defaultArithmeticFlags {overflow = toActive overflowFlag}
+  let aluOp = alu op $ defaultArithmeticFlags {_overflow = toActive overflowFlag}
   let (_, flags) = aluOp (valueToData x) (valueToData y)
-  (fromActive . overflow $ flags) H.=== overflowFlag
+  (fromActive . _overflow $ flags) H.=== overflowFlag
 
 aluTests :: TestTree
 aluTests = $(testGroupGenerator)

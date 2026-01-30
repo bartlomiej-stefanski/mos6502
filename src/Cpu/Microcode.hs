@@ -24,15 +24,15 @@ data BusDataSource
 data BusOP
   = BusOP
   { -- | Some address must be specified; even if result will not be used.
-    address :: BusAddress,
+    _address :: BusAddress,
     -- | Data to write specified address. If empty treat as read.
-    writeData :: Maybe BusDataSource
+    _writeData :: Maybe BusDataSource
   }
   deriving (Eq, Show, Generic, NFDataX)
 
 data MicroOP
   = MicroOP
-  { cmd :: MicroCmd,
-    busOp :: BusOP
+  { _cmd :: MicroCmd,
+    _busOp :: BusOP
   }
   deriving (Eq, Show, Generic, NFDataX)

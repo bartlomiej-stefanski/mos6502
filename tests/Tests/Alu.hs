@@ -9,6 +9,7 @@ import qualified Hedgehog.Range as Range
 import Test.Tasty
 import Test.Tasty.Hedgehog
 import Test.Tasty.TH
+import Tests.CpuGenerator
 import Utilities.Utils
 import qualified Prelude
 
@@ -71,7 +72,7 @@ prop_alu_bcd_addition = H.property do
   highY <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 9
   let y = lowY + 0x10 * highY
 
-  op <- H.forAll $ Gen.choice [return ADC, return ADD]
+  op <- H.forAll $ Gen.choice $ Prelude.map return [ADC, ADD]
   carryFlag <- H.forAll Gen.bool
 
   let carryAddition = case op of
@@ -187,13 +188,13 @@ setNZ flags res =
 
 nzOpTest :: ALU -> (forall a. (Bits a) => a -> a -> a) -> H.Property
 nzOpTest op opFunc = H.property do
-  x <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
-  y <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
+  x <- H.forAll genData
+  y <- H.forAll genData
   -- These operations should not affect the carry flag.
   carryFlag <- H.forAll Gen.bool
   let arithmeticFlagsCarry = defaultArithmeticFlags {_carry = toActive carryFlag}
   let opAlu = alu op arithmeticFlagsCarry
-  let (result, flags) = opAlu (valueToData x) (valueToData y)
+  let (result, flags) = opAlu x y
   let expectedResult = fromIntegral $ opFunc x y :: Data
   result H.=== expectedResult
   flags H.=== setNZ arithmeticFlagsCarry expectedResult
@@ -212,11 +213,11 @@ prop_alu_id = nzOpTest ID $ \_ y -> y
 
 shiftOpTest :: ALUShiftOp -> (Data -> (Data, Bool)) -> H.Property
 shiftOpTest shiftOp opFunc = H.property do
-  x <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
-  y <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
+  x <- H.forAll genData
+  y <- H.forAll genData
   let shiftAlu = alu (ShiftOp shiftOp) defaultArithmeticFlags
-  let (result, flags) = shiftAlu (valueToData x) (valueToData y)
-  let (expectedResult, carryFlag) = opFunc (fromIntegral y :: Data)
+  let (result, flags) = shiftAlu x y
+  let (expectedResult, carryFlag) = opFunc y
   let expectedFlagsCarry = defaultArithmeticFlags {_carry = toActive carryFlag}
   result H.=== expectedResult
   flags H.=== setNZ expectedFlagsCarry expectedResult
@@ -239,22 +240,22 @@ prop_alu_asl = shiftOpTest ASL
 
 prop_alu_ops_do_not_change_decimal_flag :: H.Property
 prop_alu_ops_do_not_change_decimal_flag = H.property do
-  x <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
-  y <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
+  x <- H.forAll genData
+  y <- H.forAll genData
   op <- H.forAll $ Gen.choice $ Prelude.map return aluOps
   decimalFlag <- H.forAll Gen.bool
   let aluOp = alu op $ defaultArithmeticFlags {_decimal = toActive decimalFlag}
-  let (_, flags) = aluOp (valueToData x) (valueToData y)
+  let (_, flags) = aluOp x y
   (fromActive . _decimal $ flags) H.=== decimalFlag
 
 prop_alu_binary_ops_do_not_change_overflow_flag :: H.Property
 prop_alu_binary_ops_do_not_change_overflow_flag = H.property do
-  x <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
-  y <- H.forAll $ Gen.integral $ Range.linear (0 :: Integer) 255
+  x <- H.forAll genData
+  y <- H.forAll genData
   op <- H.forAll $ Gen.choice $ Prelude.map return bitOps
   overflowFlag <- H.forAll Gen.bool
   let aluOp = alu op $ defaultArithmeticFlags {_overflow = toActive overflowFlag}
-  let (_, flags) = aluOp (valueToData x) (valueToData y)
+  let (_, flags) = aluOp x y
   (fromActive . _overflow $ flags) H.=== overflowFlag
 
 aluTests :: TestTree

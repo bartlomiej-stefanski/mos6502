@@ -13,7 +13,7 @@ data AddressOffset
     XRegOffset
   | -- | Offset is given by Y register.
     YRegOffset
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)
 
 -- | Defines possible instruction addressing modes.
 data AddressingMode
@@ -30,7 +30,7 @@ data AddressingMode
     ZeroPage AddressOffset
   | -- | Addressing implied by operation or unused.
     Implied
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)
 
 undefinedAddressingMode :: AddressingMode
 undefinedAddressingMode = errorX "Undefined addressing mode"
@@ -53,17 +53,17 @@ data BranchCondition
     OnNotEqual
   | -- | Take branch when Z flag is 1.
     OnEqual
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)
 
 data ALUIO = RegA | RegX | RegY | RegSP | Memory | One
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, NFDataX)
 
 data ALUConnect = ALUConnect
   { left :: Maybe ALUIO,
     right :: ALUIO,
     output :: Maybe ALUIO
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, NFDataX)
 
 -- | Represents all possible MOS6502 instructions.
 --
@@ -134,7 +134,7 @@ data Instruction
     STX
   | -- | Store Y register to memory.
     STY
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)
 
 decodeBranch :: BitVector 3 -> BranchCondition
 decodeBranch = \case

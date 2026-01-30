@@ -9,17 +9,17 @@ data MicroCmd
     CmdDecodeOpcode
   | -- | Do not perform operations.
     CmdNOP
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)
 
 data BusAddress = PC | SP | COMPUTE_FROM_MODE
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)
 
 data BusDataSource
   = DATA_SOURCE_PC_LOW
   | DATA_SOURCE_PC_HIGH
   | DATA_SOURCE_STATUS
   | DATA_SOURCE_ALU
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)
 
 data BusOP
   = BusOP
@@ -28,11 +28,11 @@ data BusOP
     -- | Data to write specified address. If empty treat as read.
     writeData :: Maybe BusDataSource
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)
 
 data MicroOP
   = MicroOP
   { cmd :: MicroCmd,
     busOp :: BusOP
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)

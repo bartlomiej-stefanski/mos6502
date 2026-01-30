@@ -11,7 +11,7 @@ data CpuFlags = CpuFlags
     brk :: Active High,
     interrupt :: Active High
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)
 
 defaultCpuFlags :: CpuFlags
 defaultCpuFlags =
@@ -34,4 +34,4 @@ data CpuState
     addressingMode :: AddressingMode
     -- TODO: Include microcode ROM address.
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, NFDataX)

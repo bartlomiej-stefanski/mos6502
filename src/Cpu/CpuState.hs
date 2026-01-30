@@ -21,6 +21,32 @@ defaultCpuFlags =
       _interrupt = toActive False
     }
 
+-- | Packs the 'CpuFlags' structure into a single byte used by the MOS6502.
+cpuFlagsToData :: CpuFlags -> Data
+cpuFlagsToData flags =
+  bitCoerce
+    ( _negative aflags,
+      _overflow aflags,
+      0 :: Bit,
+      _brk flags,
+      _decimal aflags,
+      _interrupt flags,
+      _zero aflags,
+      _carry aflags
+    )
+  where
+    aflags = _arithmeticFlags flags
+
+cpuFlagsFromData :: Data -> CpuFlags
+cpuFlagsFromData d =
+  CpuFlags
+    { _arithmeticFlags = ArithmeticFlags n v dec z c,
+      _brk = brk,
+      _interrupt = interrupt
+    }
+  where
+    (n, v, _ :: Bit, brk, dec, interrupt, z, c) = bitCoerce d
+
 data CpuState
   = CpuState
   { _regA, _regX, _regY :: Data,
@@ -35,3 +61,17 @@ data CpuState
     -- TODO: Include microcode ROM address.
   }
   deriving (Eq, Show, Generic, NFDataX)
+
+initCpuState :: CpuState
+initCpuState =
+  CpuState
+    { _regA = 0,
+      _regX = 0,
+      _regY = 0,
+      _regSP = 0xFF,
+      _regPC = 0x0000,
+      _cpuFlags = defaultCpuFlags,
+      _dataLatch = 0,
+      _instruction = NOP,
+      _addressingMode = Implied
+    }

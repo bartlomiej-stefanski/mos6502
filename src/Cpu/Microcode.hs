@@ -52,7 +52,8 @@ data BusOP
 data MicroOP
   = MicroOP
   { _cmd :: MicroCmd,
-    _busOp :: BusOP
+    _busOp :: BusOP,
+    _incrementPC :: Bool
   }
   deriving (Eq, Show, Generic, NFDataX)
 

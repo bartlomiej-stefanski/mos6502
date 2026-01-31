@@ -29,7 +29,8 @@ nopMicroOP :: MicroOP
 nopMicroOP =
   MicroOP
     { _cmd = CmdNOP,
-      _busOp = nopBusOP
+      _busOp = nopBusOP,
+      _incrementPC = False
     }
 
 nopInputData :: InputData
@@ -38,6 +39,12 @@ nopInputData =
     { _busData = Nothing,
       _microOP = nopMicroOP
     }
+
+pcIncrementer :: Bool -> CpuState -> CpuState
+pcIncrementer inc cpuState =
+  if inc
+    then cpuState {_regPC = _regPC cpuState + 1}
+    else cpuState
 
 prop_nop_does_nothing :: H.Property
 prop_nop_does_nothing = H.property do
@@ -55,14 +62,15 @@ prop_handles_bus_read = H.property do
   busInput <- H.forAll genData
 
   readOp <- H.forAll $ Gen.choice $ Prelude.map return [DATA_READ, DATA_READ_PC_LOW, DATA_READ_PC_HIGH, DATA_READ_STATUS]
+  incrementPC <- H.forAll Gen.bool
 
   let busOp = nopBusOP {_readData = Just readOp}
   let inputData =
         nopInputData
-          { _microOP = nopMicroOP {_busOp = busOp},
+          { _microOP = nopMicroOP {_busOp = busOp, _incrementPC = incrementPC},
             _busData = Just busInput
           }
-  let expectedState = case readOp of
+  let expectedState = pcIncrementer incrementPC $ case readOp of
         DATA_READ ->
           cpuState {_dataLatch = busInput}
         DATA_READ_PC_LOW ->
@@ -93,6 +101,7 @@ prop_handles_bus_write = H.property do
   writeOp <- H.forAll $ Gen.choice $ Prelude.map return [DATA_WRITE_PC_LOW, DATA_WRITE_PC_HIGH, DATA_WRITE_STATUS]
   address <- H.forAll $ Gen.choice $ Prelude.map return [SP, PC, BUS_VALUE, DATA_LATCH_AND_BUS]
   addressOffset <- H.forAll $ Gen.choice $ Prelude.map return [NONE, REGX, REGY]
+  incrementPC <- H.forAll Gen.bool
 
   let busOp =
         nopBusOP
@@ -102,7 +111,7 @@ prop_handles_bus_write = H.property do
           }
   let inputData =
         nopInputData
-          { _microOP = nopMicroOP {_busOp = busOp},
+          { _microOP = nopMicroOP {_busOp = busOp, _incrementPC = incrementPC},
             _busData = Just busInput
           }
 
@@ -127,7 +136,7 @@ prop_handles_bus_write = H.property do
         DATA_WRITE_ALU -> errorX "Impossible - not checked here"
 
   let (newState, outputData) = cpuExecutor cpuWithLatch inputData
-  newState H.=== cpuWithLatch
+  newState H.=== pcIncrementer incrementPC cpuWithLatch
   outputData
     H.=== OutputData
       { _busAddress = expectedBusAddress,
@@ -145,6 +154,7 @@ prop_handles_bus_read_and_write = H.property do
   writeOp <- H.forAll $ Gen.choice $ Prelude.map return [DATA_WRITE_PC_LOW, DATA_WRITE_PC_HIGH, DATA_WRITE_STATUS]
   address <- H.forAll $ Gen.choice $ Prelude.map return [SP, PC, BUS_VALUE, DATA_LATCH_AND_BUS]
   addressOffset <- H.forAll $ Gen.choice $ Prelude.map return [NONE, REGX, REGY]
+  incrementPC <- H.forAll Gen.bool
 
   let busOp =
         nopBusOP
@@ -155,12 +165,12 @@ prop_handles_bus_read_and_write = H.property do
           }
   let inputData =
         nopInputData
-          { _microOP = nopMicroOP {_busOp = busOp},
+          { _microOP = nopMicroOP {_busOp = busOp, _incrementPC = incrementPC},
             _busData = Just busInput
           }
 
   let cpuWithLatch = cpuState {_dataLatch = cpuDataLatch}
-  let expectedState = case readOp of
+  let expectedState = pcIncrementer incrementPC $ case readOp of
         DATA_READ ->
           cpuWithLatch {_dataLatch = busInput}
         DATA_READ_PC_LOW ->
@@ -237,6 +247,7 @@ prop_handles_branch_operations = H.property do
   cpuState <- H.forAll genCpuState
   busInput <- H.forAll genData
 
+  incrementPC <- H.forAll Gen.bool
   branchCondition <-
     H.forAll
       $ Gen.choice
@@ -246,7 +257,7 @@ prop_handles_branch_operations = H.property do
 
   let inputData =
         nopInputData
-          { _microOP = nopMicroOP {_cmd = CmdExecute},
+          { _microOP = nopMicroOP {_cmd = CmdExecute, _incrementPC = incrementPC},
             _busData = Just busInput
           }
   let cpuWithInstruction = cpuState {_instruction = BRANCH branchCondition}
@@ -260,7 +271,7 @@ prop_handles_branch_operations = H.property do
             then regPC + if offset > 0x7f then offset - 0x100 else offset
             else regPC
 
-  let expectedState = cpuWithInstruction {_regPC = expectedPC}
+  let expectedState = pcIncrementer incrementPC $ cpuWithInstruction {_regPC = expectedPC}
 
   let (newState, outputData) = cpuExecutor cpuWithInstruction inputData
   newState H.=== expectedState
@@ -277,6 +288,7 @@ prop_handles_alu_operations = H.property do
   busInput <- H.forAll genData
 
   aluOp <- H.forAll genAluOp
+  incrementPC <- H.forAll Gen.bool
 
   leftAluConnect <- H.forAll $ Gen.choice $ Prelude.map return [RegA, RegX, RegY, RegSP, One]
   rightAluConnect <- H.forAll $ Gen.choice $ Prelude.map return [RegA, RegX, RegY, RegSP, One]
@@ -293,7 +305,7 @@ prop_handles_alu_operations = H.property do
             _address = PC,
             _addressOffset = NONE
           }
-  let microOP = nopMicroOP {_cmd = CmdExecute, _busOp = busOP}
+  let microOP = nopMicroOP {_cmd = CmdExecute, _busOp = busOP, _incrementPC = incrementPC}
   let inputData =
         nopInputData
           { _microOP = microOP,
@@ -321,14 +333,15 @@ prop_handles_alu_operations = H.property do
 
   let flags = _cpuFlags cpuWithInstruction
   let expectedCpuState =
-        ( case outAluConnect of
-            Just RegA -> cpuWithInstruction {_regA = expectedValue}
-            Just RegX -> cpuWithInstruction {_regX = expectedValue}
-            Just RegY -> cpuWithInstruction {_regY = expectedValue}
-            _ -> cpuWithInstruction
-        )
-          { _cpuFlags = flags {_arithmeticFlags = expectedArithFlags}
-          }
+        pcIncrementer incrementPC
+          $ ( case outAluConnect of
+                Just RegA -> cpuWithInstruction {_regA = expectedValue}
+                Just RegX -> cpuWithInstruction {_regX = expectedValue}
+                Just RegY -> cpuWithInstruction {_regY = expectedValue}
+                _ -> cpuWithInstruction
+            )
+            { _cpuFlags = flags {_arithmeticFlags = expectedArithFlags}
+            }
 
   let expectedOutputData =
         OutputData

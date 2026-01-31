@@ -117,11 +117,7 @@ data OutputData
 -- This implements a function of type (s -> i -> (s, o)) to be used
 -- with the mealy combinator.
 cpuExecutor :: CpuState -> InputData -> (CpuState, OutputData)
-cpuExecutor cpuState inputData =
-  case cmd of
-    CmdExecute -> (applyReadData postExecCpuState, outputData)
-    CmdDecodeOpcode -> (setNextInstruction $ applyReadData cpuState, setNextMicroOp outputData)
-    CmdNOP -> (applyReadData cpuState, outputData)
+cpuExecutor cpuState inputData = (outCpuState, outputData)
   where
     microOP = _microOP inputData
     cmd = _cmd microOP
@@ -137,6 +133,11 @@ cpuExecutor cpuState inputData =
       Just DATA_READ_STATUS -> cpuS {_cpuFlags = cpuFlagsFromData $ fromJustX dataOnBus}
       Just DATA_READ -> cpuS {_dataLatch = fromJustX dataOnBus}
       Nothing -> cpuS
+
+    applyPcChange cpuS =
+      if _incrementPC microOP
+        then cpuS {_regPC = _regPC cpuS + 1}
+        else cpuS
 
     rawBusAddress :: Addr
     rawBusAddress = case _address busOP of
@@ -159,17 +160,27 @@ cpuExecutor cpuState inputData =
     (postExecCpuState, aluOutputData) =
       executeCpuInstruction (fromJustX dataOnBus) cpuState
 
-    outputData =
+    baseOutputData =
       OutputData
         { _busAddress = busAddress,
           _busWriteData = busWriteData,
           _nextMicroOp = Nothing
         }
 
+    outputData = case cmd of
+      CmdExecute -> baseOutputData
+      CmdDecodeOpcode -> setNextMicroOp baseOutputData
+      CmdNOP -> baseOutputData
+
     (nextInstruction, nextAddressingMode) = decode (fromJustX dataOnBus)
     nextMicroOpIndex = getNextMicrocodeIndex (nextInstruction, nextAddressingMode)
     setNextMicroOp oData = oData {_nextMicroOp = Just nextMicroOpIndex}
     setNextInstruction cpuS = cpuS {_instruction = nextInstruction}
+
+    outCpuState = applyPcChange . applyReadData $ case cmd of
+      CmdExecute -> postExecCpuState
+      CmdDecodeOpcode -> setNextInstruction cpuState
+      CmdNOP -> cpuState
 
 cpuMealy ::
   (HiddenClockResetEnable dom) =>

@@ -297,7 +297,9 @@ prop_handles_alu_operations = H.property do
 
   writeData <- H.forAll $ Gen.choice $ Prelude.map return [Just DATA_WRITE_ALU, Nothing]
 
-  let instruction = Compute aluOp aluConnect
+  updateFlags <- H.forAll Gen.bool
+
+  let instruction = Compute aluOp aluConnect updateFlags
 
   let busOP =
         nopBusOP
@@ -340,7 +342,13 @@ prop_handles_alu_operations = H.property do
                 Just RegY -> cpuWithInstruction {_regY = expectedValue}
                 _ -> cpuWithInstruction
             )
-            { _cpuFlags = flags {_arithmeticFlags = expectedArithFlags}
+            { _cpuFlags =
+                flags
+                  { _arithmeticFlags =
+                      if updateFlags
+                        then expectedArithFlags
+                        else arithmeticFlags
+                  }
             }
 
   let expectedOutputData =

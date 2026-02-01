@@ -26,6 +26,9 @@ data AddressingMode
     Indirect AddressOffset
   | -- | Operation on zero-page memory.
     ZeroPage AddressOffset
+  | -- | Stack Pointer addressing.
+    -- Note that this is not one of the official modes available on MOS6502.
+    StackPointer
   deriving (Eq, Show, Generic, NFDataX)
 
 undefinedAddressingMode :: AddressingMode
@@ -72,9 +75,6 @@ data Instruction
     PHP
   | -- | Pull Status register from stack.
     PLP
-  | -- | Transfer X register to SP.
-    -- Not included in 'Compute' as it does not update CPU flags.
-    TXS
   | {- Flag operations -}
 
     -- | Set Carry Flag.
@@ -120,16 +120,8 @@ data Instruction
     -- Loads from memory will use 'AddressingMode'.
     -- Calculation will update flags and save the result to chosen destination.
     --
-    -- Note that for operations that do not use memory the 'AddressingMode' should be set to 'Implied'.
-    Compute ALU ALUConnect
-  | {- Store Operations -}
-
-    -- | Store A register to memory.
-    STA
-  | -- | Store X register to memory.
-    STX
-  | -- | Store Y register to memory.
-    STY
+    -- Note that for operations that do not use memory the 'AddressingMode' should be 'undefinedAddressingMode'.
+    Compute ALU ALUConnect Bool
   deriving (Eq, Show, Generic, NFDataX)
 
 decodeBranch :: BitVector 3 -> BranchCondition
@@ -205,8 +197,7 @@ decode :: Data -> (Instruction, AddressingMode)
 decode op = case op of
   $(bitPattern "11101010") -> (NOP, undefinedAddressingMode)
   $(bitPattern "00001000") -> (PHP, undefinedAddressingMode)
-  $(bitPattern "01101000") -> (PLP, undefinedAddressingMode)
-  $(bitPattern "10011010") -> (TXS, undefinedAddressingMode)
+  $(bitPattern "00101000") -> (PLP, undefinedAddressingMode)
   $(bitPattern "00111000") -> (SEC, undefinedAddressingMode)
   $(bitPattern "00011000") -> (CLC, undefinedAddressingMode)
   $(bitPattern "11111000") -> (SED, undefinedAddressingMode)
@@ -220,29 +211,44 @@ decode op = case op of
   $(bitPattern "01000000") -> (RTI, undefinedAddressingMode)
   $(bitPattern "01.01100") -> (JMP, jumpAddressing)
   $(bitPattern "...10000") -> (BRANCH branch, undefinedAddressingMode)
-  $(bitPattern "010...01") -> (STA, aluAddressing)
-  $(bitPattern "100.0100") -> (STY, storeAddressing XRegOffset)
-  $(bitPattern "100.0110") -> (STX, storeAddressing YRegOffset)
-  $(bitPattern "10001100") -> (STY, storeAddressing XRegOffset)
-  $(bitPattern "10001110") -> (STX, storeAddressing YRegOffset)
+  -- Store register register to memory.
+  $(bitPattern "010...01") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just Memory} False, aluAddressing)
+  $(bitPattern "100.0100") -> (Compute ID ALUConnect {_left = Nothing, _right = RegY, _output = Just Memory} False, storeAddressing XRegOffset)
+  $(bitPattern "100.0110") -> (Compute ID ALUConnect {_left = Nothing, _right = RegX, _output = Just Memory} False, storeAddressing YRegOffset)
+  $(bitPattern "10001100") -> (Compute ID ALUConnect {_left = Nothing, _right = RegY, _output = Just Memory} False, storeAddressing XRegOffset)
+  $(bitPattern "10001110") -> (Compute ID ALUConnect {_left = Nothing, _right = RegX, _output = Just Memory} False, storeAddressing YRegOffset)
+  -- PHA, PLA.
+  $(bitPattern "01001000") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just Memory} False, StackPointer)
+  $(bitPattern "01101000") -> (Compute ID ALUConnect {_left = Nothing, _right = Memory, _output = Just RegA} True, StackPointer)
   -- Transfer Register.
-  $(bitPattern "10001010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegX, _output = Just RegA}, undefinedAddressingMode)
-  $(bitPattern "10101010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just RegX}, undefinedAddressingMode)
-  $(bitPattern "10111010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegSP, _output = Just RegX}, undefinedAddressingMode)
-  $(bitPattern "10011000") -> (Compute ID ALUConnect {_left = Nothing, _right = RegY, _output = Just RegA}, undefinedAddressingMode)
-  $(bitPattern "10101000") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just RegY}, undefinedAddressingMode)
+  $(bitPattern "10001010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegX, _output = Just RegA} True, undefinedAddressingMode)
+  $(bitPattern "10101010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just RegX} True, undefinedAddressingMode)
+  $(bitPattern "10111010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegSP, _output = Just RegX} True, undefinedAddressingMode)
+  $(bitPattern "10011010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegX, _output = Just RegSP} False, undefinedAddressingMode)
+  $(bitPattern "10011000") -> (Compute ID ALUConnect {_left = Nothing, _right = RegY, _output = Just RegA} True, undefinedAddressingMode)
+  $(bitPattern "10101000") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just RegY} True, undefinedAddressingMode)
   -- General ALU operations: ORA, AND, EOR, ADC, LDA, CMP, SBC.
-  $(bitPattern "......01") -> (Compute aluOp ALUConnect {_left = Just RegA, _right = Memory, _output = aluDest}, aluAddressing)
+  $(bitPattern "......01") -> (Compute aluOp ALUConnect {_left = Just RegA, _right = Memory, _output = aluDest} True, aluAddressing)
+  -- BIT.
+  $(bitPattern "00100100") -> (Compute BIT ALUConnect {_left = Just RegA, _right = Memory, _output = Nothing} True, ZeroPage None)
+  $(bitPattern "00101100") -> (Compute BIT ALUConnect {_left = Just RegA, _right = Memory, _output = Nothing} True, Absolute None)
   -- CPX, CPY.
-  $(bitPattern "11.00.00") -> (Compute CMP ALUConnect {_left = Just cmpReg, _right = Memory, _output = Nothing}, cmpAddressing)
+  $(bitPattern "11.00.00") -> (Compute CMP ALUConnect {_left = Just cmpReg, _right = Memory, _output = Nothing} True, cmpAddressing)
+  $(bitPattern "11.01100") -> (Compute CMP ALUConnect {_left = Just cmpReg, _right = Memory, _output = Nothing} True, Absolute None)
   -- ASL, ROL, LSR, ROR.
-  $(bitPattern "0....110") -> (Compute shiftOp ALUConnect {_left = Nothing, _right = Memory, _output = Just Memory}, shiftAddressing)
-  $(bitPattern "0...1010") -> (Compute shiftOp ALUConnect {_left = Nothing, _right = RegA, _output = Just RegA}, undefinedAddressingMode)
+  $(bitPattern "0....110") -> (Compute shiftOp ALUConnect {_left = Nothing, _right = Memory, _output = Just Memory} True, shiftAddressing)
+  $(bitPattern "0...1010") -> (Compute shiftOp ALUConnect {_left = Nothing, _right = RegA, _output = Just RegA} True, undefinedAddressingMode)
+  -- DEX, INX
+  $(bitPattern "11001010") -> (Compute SUB ALUConnect {_left = Just RegX, _right = One, _output = Just RegX} True, undefinedAddressingMode)
+  $(bitPattern "11101000") -> (Compute ADD ALUConnect {_left = Just RegX, _right = One, _output = Just RegX} True, undefinedAddressingMode)
+  -- DEY, INY
+  $(bitPattern "10001000") -> (Compute SUB ALUConnect {_left = Just RegY, _right = One, _output = Just RegY} True, undefinedAddressingMode)
+  $(bitPattern "11001000") -> (Compute ADD ALUConnect {_left = Just RegY, _right = One, _output = Just RegY} True, undefinedAddressingMode)
   -- INC, DEC.
-  $(bitPattern "11...110") -> (Compute incDecOp ALUConnect {_left = Just Memory, _right = One, _output = Just Memory}, incDecAddressing)
+  $(bitPattern "11...110") -> (Compute incDecOp ALUConnect {_left = Just Memory, _right = One, _output = Just Memory} True, incDecAddressing)
   -- LDX, LDY.
-  $(bitPattern "101000.0") -> (Compute ID ALUConnect {_left = Nothing, _right = Memory, _output = loadTarget}, Immediate)
-  $(bitPattern "101..1.0") -> (Compute ID ALUConnect {_left = Nothing, _right = Memory, _output = loadTarget}, loadAddressing)
+  $(bitPattern "101000.0") -> (Compute ID ALUConnect {_left = Nothing, _right = Memory, _output = loadTarget} True, Immediate)
+  $(bitPattern "101..1.0") -> (Compute ID ALUConnect {_left = Nothing, _right = Memory, _output = loadTarget} True, loadAddressing)
   _ -> errorX "Unknown instruction"
   where
     jumpAddressing = if testBit op 5 then Indirect None else Absolute None

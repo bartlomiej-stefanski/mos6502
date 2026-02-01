@@ -19,8 +19,6 @@ data AddressOffset
 data AddressingMode
   = -- | Operation on value provided in instruction.
     Immediate
-  | -- | Operation on memory, address is PC plus signed single-byte offset.
-    Relative
   | -- | Operation on memory, absolute address given.
     Absolute AddressOffset
   | -- | Operation on memory addressed indirectly.
@@ -28,8 +26,6 @@ data AddressingMode
     Indirect AddressOffset
   | -- | Operation on zero-page memory.
     ZeroPage AddressOffset
-  | -- | Addressing implied by operation or unused.
-    Implied
   deriving (Eq, Show, Generic, NFDataX)
 
 undefinedAddressingMode :: AddressingMode
@@ -230,18 +226,18 @@ decode op = case op of
   $(bitPattern "10001100") -> (STY, storeAddressing XRegOffset)
   $(bitPattern "10001110") -> (STX, storeAddressing YRegOffset)
   -- Transfer Register.
-  $(bitPattern "10001010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegX, _output = Just RegA}, Implied)
-  $(bitPattern "10101010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just RegX}, Implied)
-  $(bitPattern "10111010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegSP, _output = Just RegX}, Implied)
-  $(bitPattern "10011000") -> (Compute ID ALUConnect {_left = Nothing, _right = RegY, _output = Just RegA}, Implied)
-  $(bitPattern "10101000") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just RegY}, Implied)
+  $(bitPattern "10001010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegX, _output = Just RegA}, undefinedAddressingMode)
+  $(bitPattern "10101010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just RegX}, undefinedAddressingMode)
+  $(bitPattern "10111010") -> (Compute ID ALUConnect {_left = Nothing, _right = RegSP, _output = Just RegX}, undefinedAddressingMode)
+  $(bitPattern "10011000") -> (Compute ID ALUConnect {_left = Nothing, _right = RegY, _output = Just RegA}, undefinedAddressingMode)
+  $(bitPattern "10101000") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just RegY}, undefinedAddressingMode)
   -- General ALU operations: ORA, AND, EOR, ADC, LDA, CMP, SBC.
   $(bitPattern "......01") -> (Compute aluOp ALUConnect {_left = Just RegA, _right = Memory, _output = aluDest}, aluAddressing)
   -- CPX, CPY.
   $(bitPattern "11.00.00") -> (Compute CMP ALUConnect {_left = Just cmpReg, _right = Memory, _output = Nothing}, cmpAddressing)
   -- ASL, ROL, LSR, ROR.
   $(bitPattern "0....110") -> (Compute shiftOp ALUConnect {_left = Nothing, _right = Memory, _output = Just Memory}, shiftAddressing)
-  $(bitPattern "0...1010") -> (Compute shiftOp ALUConnect {_left = Nothing, _right = RegA, _output = Just RegA}, Implied)
+  $(bitPattern "0...1010") -> (Compute shiftOp ALUConnect {_left = Nothing, _right = RegA, _output = Just RegA}, undefinedAddressingMode)
   -- INC, DEC.
   $(bitPattern "11...110") -> (Compute incDecOp ALUConnect {_left = Just Memory, _right = One, _output = Just Memory}, incDecAddressing)
   -- LDX, LDY.

@@ -102,13 +102,14 @@ executeCpuInstruction dataOnBus cpuState =
 data InputData
   = InputData
   { _busData :: Maybe Data,
+    _lastBusAddress :: Addr,
     _microOP :: MicroOP
   }
   deriving (Eq, Show, Generic, NFDataX)
 
 data OutputData
   = OutputData
-  { _busAddress :: Addr,
+  { _busAddress :: Maybe Addr,
     _busWriteData :: Maybe Data,
     -- | Used by the CPU to indicate the next microcode operation to execute.
     _nextMicroOp :: Maybe MicroOpIndex
@@ -129,11 +130,11 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
 
     busOP = _busOp microOP
     readData = _readData busOP
+    latchBusData cpuS = cpuS {_dataLatch = fromJustX dataOnBus}
     applyReadData cpuS = case readData of
-      Just DATA_READ_PC_LOW -> cpuS {_regPC = bitCoerce (regPCH, fromJustX dataOnBus)}
-      Just DATA_READ_PC_HIGH -> cpuS {_regPC = bitCoerce (fromJustX dataOnBus, regPCL)}
-      Just DATA_READ_STATUS -> cpuS {_cpuFlags = cpuFlagsFromData $ fromJustX dataOnBus}
-      Just DATA_READ -> cpuS {_dataLatch = fromJustX dataOnBus}
+      Just DATA_READ_PC -> latchBusData cpuS {_regPC = bitCoerce (fromJustX dataOnBus, _dataLatch cpuState)}
+      Just DATA_READ_STATUS -> latchBusData cpuS {_cpuFlags = cpuFlagsFromData $ fromJustX dataOnBus}
+      Just DATA_READ -> latchBusData cpuS
       Nothing -> cpuS
 
     applyPcChange cpuS =
@@ -141,16 +142,32 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
         then cpuS {_regPC = _regPC cpuS + 1}
         else cpuS
 
-    rawBusAddress :: Addr
-    rawBusAddress = case _address busOP of
-      SP -> zeroExtend $ _regSP cpuState
-      PC -> _regPC cpuState
-      BUS_VALUE -> zeroExtend $ fromJustX dataOnBus
-      DATA_LATCH_AND_BUS -> bitCoerce (fromJustX dataOnBus, _dataLatch cpuState)
-    busAddress = case _addressOffset busOP of
-      NONE -> rawBusAddress
-      REGX -> rawBusAddress + zeroExtend (_regX cpuState)
-      REGY -> rawBusAddress + zeroExtend (_regY cpuState)
+    applySpChange cpuS = case _spOperation microOP of
+      SPIncrement -> cpuS {_regSP = _regSP cpuS + 1}
+      SPDecrement -> cpuS {_regSP = _regSP cpuS - 1}
+      SPNone -> cpuS
+
+    getBusAddress :: (BusAddress, BusAddressOffset) -> Addr
+    getBusAddress (busAddress, busAddressOffset) = rawBusAddress + rawAddressOffset
+      where
+        rawBusAddress :: Addr
+        rawBusAddress = case busAddress of
+          SP -> zeroExtend $ _regSP cpuState
+          -- SP points to the next free location -> increment before use.
+          SP_INC -> zeroExtend (_regSP cpuState + 1)
+          PC -> _regPC cpuState
+          BUS_VALUE -> zeroExtend $ fromJustX dataOnBus
+          DATA_LATCH_AND_BUS -> bitCoerce (fromJustX dataOnBus, _dataLatch cpuState)
+          LAST_BUS_ADDRESS -> _lastBusAddress inputData
+          LAST_BUS_ADDRESS_PLUS_ONE -> _lastBusAddress inputData + 1
+
+        rawAddressOffset = case busAddressOffset of
+          NONE -> 0
+          REGX -> zeroExtend (_regX cpuState)
+          REGY -> zeroExtend (_regY cpuState)
+
+    address = _address busOP
+    addressForBus = getBusAddress <$> address
 
     busWriteData = case _writeData busOP of
       Just DATA_WRITE_PC_LOW -> Just regPCL
@@ -164,7 +181,7 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
 
     baseOutputData =
       OutputData
-        { _busAddress = busAddress,
+        { _busAddress = addressForBus,
           _busWriteData = busWriteData,
           _nextMicroOp = Nothing
         }
@@ -179,7 +196,7 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
     setNextMicroOp oData = oData {_nextMicroOp = Just nextMicroOpIndex}
     setNextInstruction cpuS = cpuS {_instruction = nextInstruction}
 
-    outCpuState = applyPcChange . applyReadData $ case cmd of
+    outCpuState = applySpChange . applyPcChange . applyReadData $ case cmd of
       CmdExecute -> postExecCpuState
       CmdDecodeOpcode -> setNextInstruction cpuState
       CmdNOP -> cpuState

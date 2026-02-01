@@ -23,7 +23,7 @@ defaultArithmeticFlags =
       _carry = toActive False
     }
 
-data ALUBinaryOp = OR | AND | XOR
+data ALUBinaryOp = OR | XOR | AND
   deriving (Show, Eq, Generic, NFDataX)
 
 data ALUShiftOp = ROR | ROL | LSR | ASL
@@ -36,6 +36,8 @@ data ALU
     ALU_ADD Bool
   | -- | Subtract (with carry).
     ALU_SUB Bool
+  | -- | The cursed BIT-check operation.
+    BIT
   | -- | Identity function applied to Register value. Updates CPU flags.
     ID
   deriving (Show, Eq, Generic, NFDataX)
@@ -122,6 +124,14 @@ alu op flags x y = (result, newFlags)
               AND -> x .&. y
               XOR -> x `xor` y
          in (res, flagsNZ)
+      BIT ->
+        ( x,
+          flags
+            { _negative = toActive (testBit y 7),
+              _overflow = toActive (testBit y 6),
+              _zero = toActive ((x .&. y) == 0)
+            }
+        )
       ShiftOp shiftOp ->
         let (res, shiftCarry) = case shiftOp of
               ROR -> (bitCoerce (lowBit, highBit, middleBits), lowBit)

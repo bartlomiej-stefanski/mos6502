@@ -34,7 +34,6 @@ aluInputForCompute aluio cpuState dataOnBus =
 executeCpuInstruction :: Data -> CpuState -> (CpuState, Data)
 executeCpuInstruction dataOnBus cpuState =
   let newCpuState = case instruction of
-        TXS -> cpuState {_regSP = regX}
         SEC -> changeArithFlags \f -> f {_carry = toActive True}
         CLC -> changeArithFlags \f -> f {_carry = toActive False}
         SED -> changeArithFlags \f -> f {_decimal = toActive True}
@@ -43,13 +42,17 @@ executeCpuInstruction dataOnBus cpuState =
         SEI -> changeFlags \f -> f {_interrupt = toActive True}
         CLI -> changeFlags \f -> f {_interrupt = toActive False}
         BRANCH _ -> cpuState {_regPC = pcAfterBranch}
-        Compute _ (ALUConnect _ _ aluOut) ->
+        Compute _ (ALUConnect _ _ aluOut) updateFlags ->
           let registerChange s = case aluOut of
                 Just RegA -> s {_regA = aluResult}
                 Just RegX -> s {_regX = aluResult}
                 Just RegY -> s {_regY = aluResult}
+                Just RegSP -> s {_regSP = aluResult}
                 _ -> s
-           in registerChange $ changeFlags \f -> f {_arithmeticFlags = aluArithmeticFlags}
+           in registerChange
+                $ if updateFlags
+                  then changeFlags \f -> f {_arithmeticFlags = aluArithmeticFlags}
+                  else cpuState
         _ -> errorX "Not Supported Instruction in executeCpuInstruction"
    in (newCpuState, aluResult)
   where
@@ -61,7 +64,6 @@ executeCpuInstruction dataOnBus cpuState =
 
     instruction = _instruction cpuState
 
-    regX = _regX cpuState
     regPC = _regPC cpuState
     (regPCH, regPCL) = splitAddr regPC
 
@@ -85,12 +87,12 @@ executeCpuInstruction dataOnBus cpuState =
         else regPC
 
     aluOp = case instruction of
-      Compute op _ -> op
+      Compute op _ _ -> op
       BRANCH _ -> ALU_ADD False
       _ -> errorX "Undefined aluOP for non (BRANCH | COMPUTE) operation"
 
     (aluInputX, aluInputY) = case instruction of
-      Compute _ (ALUConnect left right _) ->
+      Compute _ (ALUConnect left right _) _ ->
         (aluInputForCompute left cpuState dataOnBus, aluInputForCompute (Just right) cpuState dataOnBus)
       BRANCH _ -> (regPCL, dataOnBus)
       _ -> errorX "Undefined aluInput for non (BRANCH | COMPUTE) operation"

@@ -16,27 +16,11 @@ import Tests.CpuGenerator
 import Utilities.Utils
 import qualified Prelude
 
-nopBusOP :: BusOP
-nopBusOP =
-  BusOP
-    { _address = PC,
-      _addressOffset = NONE,
-      _writeData = Nothing,
-      _readData = Nothing
-    }
-
-nopMicroOP :: MicroOP
-nopMicroOP =
-  MicroOP
-    { _cmd = CmdNOP,
-      _busOp = nopBusOP,
-      _incrementPC = False
-    }
-
 nopInputData :: InputData
 nopInputData =
   InputData
     { _busData = Nothing,
+      _lastBusAddress = errorX "Should not use uninitialized lastBusAddress",
       _microOP = nopMicroOP
     }
 
@@ -53,7 +37,7 @@ prop_nop_does_nothing = H.property do
   let (newState, outputData) = cpuExecutor cpuState nopInputData
   _busWriteData outputData H.=== Nothing
   _nextMicroOp outputData H.=== Nothing
-  _busAddress outputData H.=== _regPC cpuState
+  _busAddress outputData H.=== Nothing
   newState H.=== cpuState
 
 prop_handles_bus_read :: H.Property
@@ -61,7 +45,7 @@ prop_handles_bus_read = H.property do
   cpuState <- H.forAll genCpuState
   busInput <- H.forAll genData
 
-  readOp <- H.forAll $ Gen.choice $ Prelude.map return [DATA_READ, DATA_READ_PC_LOW, DATA_READ_PC_HIGH, DATA_READ_STATUS]
+  readOp <- H.forAll $ Gen.choice $ Prelude.map return [DATA_READ, DATA_READ_PC, DATA_READ_STATUS]
   incrementPC <- H.forAll Gen.bool
 
   let busOp = nopBusOP {_readData = Just readOp}
@@ -70,24 +54,20 @@ prop_handles_bus_read = H.property do
           { _microOP = nopMicroOP {_busOp = busOp, _incrementPC = incrementPC},
             _busData = Just busInput
           }
+  let latchBusData cpuS = cpuS {_dataLatch = busInput}
   let expectedState = pcIncrementer incrementPC $ case readOp of
-        DATA_READ ->
-          cpuState {_dataLatch = busInput}
-        DATA_READ_PC_LOW ->
-          let (pcHigh, _) = splitAddr $ _regPC cpuState
-           in cpuState {_regPC = bitCoerce (pcHigh, busInput)}
-        DATA_READ_PC_HIGH -> do
-          let (_, pcLow) = splitAddr $ _regPC cpuState
-           in cpuState {_regPC = bitCoerce (busInput, pcLow)}
+        DATA_READ -> latchBusData cpuState
+        DATA_READ_PC ->
+          latchBusData cpuState {_regPC = bitCoerce (busInput, _dataLatch cpuState)}
         DATA_READ_STATUS ->
           let expectedFlags = cpuFlagsFromData busInput
-           in cpuState {_cpuFlags = expectedFlags}
+           in latchBusData cpuState {_cpuFlags = expectedFlags}
 
   let (newState, outputData) = cpuExecutor cpuState inputData
   newState H.=== expectedState
   outputData
     H.=== OutputData
-      { _busAddress = _regPC cpuState,
+      { _busAddress = Nothing,
         _busWriteData = Nothing,
         _nextMicroOp = Nothing
       }
@@ -99,20 +79,21 @@ prop_handles_bus_write = H.property do
   cpuDataLatch <- H.forAll genData
 
   writeOp <- H.forAll $ Gen.choice $ Prelude.map return [DATA_WRITE_PC_LOW, DATA_WRITE_PC_HIGH, DATA_WRITE_STATUS]
-  address <- H.forAll $ Gen.choice $ Prelude.map return [SP, PC, BUS_VALUE, DATA_LATCH_AND_BUS]
+  address <- H.forAll $ Gen.choice $ Prelude.map return [SP, SP_INC, PC, BUS_VALUE, DATA_LATCH_AND_BUS, LAST_BUS_ADDRESS, LAST_BUS_ADDRESS_PLUS_ONE]
   addressOffset <- H.forAll $ Gen.choice $ Prelude.map return [NONE, REGX, REGY]
   incrementPC <- H.forAll Gen.bool
+  lastBusAddress <- H.forAll genAddr
 
   let busOp =
         nopBusOP
           { _writeData = Just writeOp,
-            _address = address,
-            _addressOffset = addressOffset
+            _address = Just (address, addressOffset)
           }
   let inputData =
         nopInputData
           { _microOP = nopMicroOP {_busOp = busOp, _incrementPC = incrementPC},
-            _busData = Just busInput
+            _busData = Just busInput,
+            _lastBusAddress = lastBusAddress
           }
 
   let cpuWithLatch = cpuState {_dataLatch = cpuDataLatch}
@@ -125,9 +106,12 @@ prop_handles_bus_write = H.property do
   let expectedBusAddress =
         offset + case address of
           SP -> zeroExtend sp
+          SP_INC -> zeroExtend (sp + 1)
           PC -> pc
           BUS_VALUE -> zeroExtend busInput
           DATA_LATCH_AND_BUS -> bitCoerce (busInput, cpuDataLatch)
+          LAST_BUS_ADDRESS -> lastBusAddress
+          LAST_BUS_ADDRESS_PLUS_ONE -> lastBusAddress + 1
 
   let busWriteData = case writeOp of
         DATA_WRITE_PC_LOW -> snd $ splitAddr pc
@@ -139,7 +123,7 @@ prop_handles_bus_write = H.property do
   newState H.=== pcIncrementer incrementPC cpuWithLatch
   outputData
     H.=== OutputData
-      { _busAddress = expectedBusAddress,
+      { _busAddress = Just expectedBusAddress,
         _busWriteData = Just busWriteData,
         _nextMicroOp = Nothing
       }
@@ -150,38 +134,36 @@ prop_handles_bus_read_and_write = H.property do
   busInput <- H.forAll genData
   cpuDataLatch <- H.forAll genData
 
-  readOp <- H.forAll $ Gen.choice $ Prelude.map return [DATA_READ, DATA_READ_PC_LOW, DATA_READ_PC_HIGH, DATA_READ_STATUS]
+  readOp <- H.forAll $ Gen.choice $ Prelude.map return [DATA_READ, DATA_READ_PC, DATA_READ_STATUS]
   writeOp <- H.forAll $ Gen.choice $ Prelude.map return [DATA_WRITE_PC_LOW, DATA_WRITE_PC_HIGH, DATA_WRITE_STATUS]
-  address <- H.forAll $ Gen.choice $ Prelude.map return [SP, PC, BUS_VALUE, DATA_LATCH_AND_BUS]
+  address <- H.forAll $ Gen.choice $ Prelude.map return [SP, SP_INC, PC, BUS_VALUE, DATA_LATCH_AND_BUS, LAST_BUS_ADDRESS, LAST_BUS_ADDRESS_PLUS_ONE]
   addressOffset <- H.forAll $ Gen.choice $ Prelude.map return [NONE, REGX, REGY]
   incrementPC <- H.forAll Gen.bool
+  lastBusAddress <- H.forAll genAddr
 
   let busOp =
         nopBusOP
           { _writeData = Just writeOp,
-            _address = address,
-            _addressOffset = addressOffset,
+            _address = Just (address, addressOffset),
             _readData = Just readOp
           }
   let inputData =
         nopInputData
           { _microOP = nopMicroOP {_busOp = busOp, _incrementPC = incrementPC},
-            _busData = Just busInput
+            _busData = Just busInput,
+            _lastBusAddress = lastBusAddress
           }
 
   let cpuWithLatch = cpuState {_dataLatch = cpuDataLatch}
+  let latchBusData cpuS = cpuS {_dataLatch = busInput}
   let expectedState = pcIncrementer incrementPC $ case readOp of
         DATA_READ ->
-          cpuWithLatch {_dataLatch = busInput}
-        DATA_READ_PC_LOW ->
-          let (pcHigh, _) = splitAddr $ _regPC cpuState
-           in cpuWithLatch {_regPC = bitCoerce (pcHigh, busInput)}
-        DATA_READ_PC_HIGH -> do
-          let (_, pcLow) = splitAddr $ _regPC cpuState
-           in cpuWithLatch {_regPC = bitCoerce (busInput, pcLow)}
+          latchBusData cpuWithLatch
+        DATA_READ_PC ->
+          latchBusData cpuState {_regPC = bitCoerce (busInput, _dataLatch cpuWithLatch)}
         DATA_READ_STATUS ->
           let expectedFlags = cpuFlagsFromData busInput
-           in cpuWithLatch {_cpuFlags = expectedFlags}
+           in latchBusData cpuWithLatch {_cpuFlags = expectedFlags}
 
   let (x, y, pc, sp) = (_regX cpuState, _regY cpuState, _regPC cpuState, _regSP cpuState)
   let offset :: Addr = case addressOffset of
@@ -191,9 +173,12 @@ prop_handles_bus_read_and_write = H.property do
   let expectedBusAddress =
         offset + case address of
           SP -> zeroExtend sp
+          SP_INC -> zeroExtend (sp + 1)
           PC -> pc
           BUS_VALUE -> zeroExtend busInput
           DATA_LATCH_AND_BUS -> bitCoerce (busInput, cpuDataLatch)
+          LAST_BUS_ADDRESS -> lastBusAddress
+          LAST_BUS_ADDRESS_PLUS_ONE -> lastBusAddress + 1
 
   let busWriteData = case writeOp of
         DATA_WRITE_PC_LOW -> snd $ splitAddr pc
@@ -205,7 +190,7 @@ prop_handles_bus_read_and_write = H.property do
   newState H.=== expectedState
   outputData
     H.=== OutputData
-      { _busAddress = expectedBusAddress,
+      { _busAddress = Just expectedBusAddress,
         _busWriteData = Just busWriteData,
         _nextMicroOp = Nothing
       }
@@ -237,7 +222,7 @@ prop_handles_flag_operations = H.property do
   newState H.=== expectedCpuState
   outputData
     H.=== OutputData
-      { _busAddress = _regPC cpuState,
+      { _busAddress = Nothing,
         _busWriteData = Nothing,
         _nextMicroOp = Nothing
       }
@@ -257,7 +242,12 @@ prop_handles_branch_operations = H.property do
 
   let inputData =
         nopInputData
-          { _microOP = nopMicroOP {_cmd = CmdExecute, _incrementPC = incrementPC},
+          { _microOP =
+              nopMicroOP
+                { _cmd = CmdExecute,
+                  _busOp = nopBusOP {_address = Nothing},
+                  _incrementPC = incrementPC
+                },
             _busData = Just busInput
           }
   let cpuWithInstruction = cpuState {_instruction = BRANCH branchCondition}
@@ -277,7 +267,7 @@ prop_handles_branch_operations = H.property do
   newState H.=== expectedState
   outputData
     H.=== OutputData
-      { _busAddress = _regPC cpuState,
+      { _busAddress = Nothing,
         _busWriteData = Nothing,
         _nextMicroOp = Nothing
       }
@@ -304,8 +294,7 @@ prop_handles_alu_operations = H.property do
   let busOP =
         nopBusOP
           { _writeData = writeData,
-            _address = PC,
-            _addressOffset = NONE
+            _address = Just (PC, NONE)
           }
   let microOP = nopMicroOP {_cmd = CmdExecute, _busOp = busOP, _incrementPC = incrementPC}
   let inputData =
@@ -353,7 +342,7 @@ prop_handles_alu_operations = H.property do
 
   let expectedOutputData =
         OutputData
-          { _busAddress = _regPC cpuWithInstruction,
+          { _busAddress = Just $ _regPC cpuWithInstruction,
             _busWriteData =
               case writeData of
                 Just DATA_WRITE_ALU -> Just expectedValue

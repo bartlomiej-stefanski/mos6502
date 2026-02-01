@@ -5,7 +5,8 @@ import Cpu.Alu
 import Cpu.Cpu
 import Cpu.CpuState
 import Cpu.Instructions
-import Cpu.Microcode
+import Cpu.Microcode.Data
+import Cpu.Microcode.Map
 import Utilities.Utils
 
 shouldTakeBranch :: BranchCondition -> ArithmeticFlags -> Bool
@@ -192,7 +193,7 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
       CmdNOP -> baseOutputData
 
     (nextInstruction, nextAddressingMode) = decode (fromJustX dataOnBus)
-    nextMicroOpIndex = getNextMicrocodeIndex (nextInstruction, nextAddressingMode)
+    nextMicroOpIndex = nextMicrocodeIndex (nextInstruction, nextAddressingMode)
     setNextMicroOp oData = oData {_nextMicroOp = Just nextMicroOpIndex}
     setNextInstruction cpuS = cpuS {_instruction = nextInstruction}
 

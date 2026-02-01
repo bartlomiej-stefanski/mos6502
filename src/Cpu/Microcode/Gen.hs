@@ -1,89 +1,9 @@
-module Cpu.Microcode where
+module Cpu.Microcode.Gen where
 
 import Clash.Prelude
 import Cpu.Instructions
+import Cpu.Microcode.Data
 import qualified Prelude
-
-data MicroCmd
-  = -- | Execute actual instruction.
-    CmdExecute
-  | -- | Decode opcode on bus to uncover next MicroOP.
-    -- This is the last instruction in a chain.
-    CmdDecodeOpcode
-  | -- | Do not perform operations.
-    CmdNOP
-  deriving (Eq, Show, Generic, NFDataX)
-
-data BusAddressOffset = NONE | REGX | REGY
-  deriving (Eq, Show, Generic, NFDataX)
-
-data BusAddress
-  = SP
-  | SP_INC
-  | PC
-  | BUS_VALUE
-  | DATA_LATCH_AND_BUS
-  | LAST_BUS_ADDRESS
-  | LAST_BUS_ADDRESS_PLUS_ONE
-  deriving (Eq, Show, Generic, NFDataX)
-
-data BusDataSourceWrite
-  = DATA_WRITE_PC_LOW
-  | DATA_WRITE_PC_HIGH
-  | DATA_WRITE_STATUS
-  | DATA_WRITE_ALU
-  deriving (Eq, Show, Generic, NFDataX)
-
-data BusDataSourceRead
-  = DATA_READ_PC
-  | DATA_READ_STATUS
-  | DATA_READ
-  deriving (Eq, Show, Generic, NFDataX)
-
-data BusOP
-  = BusOP
-  { -- | Some address must be specified; even if result will not be used.
-    _address :: Maybe (BusAddress, BusAddressOffset),
-    -- | Data to write onto bus. If empty treat as read request.
-    _writeData :: Maybe BusDataSourceWrite,
-    -- | What happens with data on bus.
-    _readData :: Maybe BusDataSourceRead
-  }
-  deriving (Eq, Show, Generic, NFDataX)
-
-data SPChange = SPIncrement | SPDecrement | SPNone
-  deriving (Eq, Show, Generic, NFDataX)
-
-data MicroOP
-  = MicroOP
-  { _cmd :: MicroCmd,
-    _busOp :: BusOP,
-    _incrementPC :: Bool,
-    _spOperation :: SPChange
-  }
-  deriving (Eq, Show, Generic, NFDataX)
-
-type MicroOpIndex = Index 1024
-
-nopBusOP :: BusOP
-nopBusOP =
-  BusOP
-    { _address = Nothing,
-      _writeData = Nothing,
-      _readData = Nothing
-    }
-
-nopMicroOP :: MicroOP
-nopMicroOP =
-  MicroOP
-    { _cmd = CmdNOP,
-      _busOp = nopBusOP,
-      _incrementPC = False,
-      _spOperation = SPNone
-    }
-
-getNextMicrocodeIndex :: (Instruction, AddressingMode) -> MicroOpIndex
-getNextMicrocodeIndex = errorX "Not implemented"
 
 addressOffsetToBusAddressOffset :: AddressOffset -> BusAddressOffset
 addressOffsetToBusAddressOffset offset = case offset of
@@ -124,6 +44,10 @@ microOPIncrementPC microOP = microOP {_incrementPC = True}
 microOPChangeSP :: SPChange -> MicroOP -> MicroOP
 microOPChangeSP spChange microOP = microOP {_spOperation = spChange}
 
+-- | Given an instruction and addressing mode generates a list of micro-operations.
+-- These micro-operations are encoded as 'transformers' for NOP microOP.
+-- Generator omits a final 'CmdDecodeOpcode' microOP necessary to fetch next instruction
+-- as it will be appended latger in the pipeline.
 microcodeGenerator :: (Instruction, AddressingMode) -> [MicroOP -> MicroOP]
 microcodeGenerator (instruction, addressingMode) =
   case (instruction, addressingMode) of
@@ -207,7 +131,7 @@ microcodeGenerator (instruction, addressingMode) =
       Indirect None ->
         [ placeImmediatOnBus,
           placeImmediatOnBus . readFromBus DATA_READ,
-          -- Load the low-byte of the addreess, requested address will be latched on bus.
+          -- Load the low-byte of the address, requested address will be latched on bus.
           placeDataOnBus DATA_LATCH_AND_BUS NONE,
           -- Load the high-byte of the address, requested address will be latched on bus.
           placeDataOnBus LAST_BUS_ADDRESS_PLUS_ONE NONE,

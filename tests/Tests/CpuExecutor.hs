@@ -6,7 +6,7 @@ import Cpu.Cpu
 import Cpu.CpuState
 import Cpu.Executor
 import Cpu.Instructions
-import Cpu.Microcode
+import Cpu.Microcode.Data
 import qualified Hedgehog as H
 import qualified Hedgehog.Gen as Gen
 import Test.Tasty

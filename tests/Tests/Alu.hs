@@ -185,11 +185,12 @@ prop_alu_bit = H.property do
   y <- H.forAll genData
 
   let xAndY = x .&. y
-  let expectedFlags = defaultArithmeticFlags {
-    _zero = toActive (xAndY == 0),
-    _negative = toActive (testBit y 7),
-    _overflow = toActive (testBit y 6)
-  }
+  let expectedFlags =
+        defaultArithmeticFlags
+          { _zero = toActive (xAndY == 0),
+            _negative = toActive (testBit y 7),
+            _overflow = toActive (testBit y 6)
+          }
 
   let bitAlu = alu BIT defaultArithmeticFlags
   let (_, flags) = bitAlu x y

@@ -127,7 +127,7 @@ prop_handles_bus_write = H.property do
           SP -> zeroExtend sp
           PC -> pc
           BUS_VALUE -> zeroExtend busInput
-          DATA_LATCH_AND_BUS -> bitCoerce (cpuDataLatch, busInput)
+          DATA_LATCH_AND_BUS -> bitCoerce (busInput, cpuDataLatch)
 
   let busWriteData = case writeOp of
         DATA_WRITE_PC_LOW -> snd $ splitAddr pc
@@ -193,7 +193,7 @@ prop_handles_bus_read_and_write = H.property do
           SP -> zeroExtend sp
           PC -> pc
           BUS_VALUE -> zeroExtend busInput
-          DATA_LATCH_AND_BUS -> bitCoerce (cpuDataLatch, busInput)
+          DATA_LATCH_AND_BUS -> bitCoerce (busInput, cpuDataLatch)
 
   let busWriteData = case writeOp of
         DATA_WRITE_PC_LOW -> snd $ splitAddr pc

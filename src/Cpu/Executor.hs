@@ -144,7 +144,7 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
       SP -> zeroExtend $ _regSP cpuState
       PC -> _regPC cpuState
       BUS_VALUE -> zeroExtend $ fromJustX dataOnBus
-      DATA_LATCH_AND_BUS -> bitCoerce (_dataLatch cpuState, fromJustX dataOnBus)
+      DATA_LATCH_AND_BUS -> bitCoerce (fromJustX dataOnBus, _dataLatch cpuState)
     busAddress = case _addressOffset busOP of
       NONE -> rawBusAddress
       REGX -> rawBusAddress + zeroExtend (_regX cpuState)

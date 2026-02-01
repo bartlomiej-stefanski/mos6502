@@ -81,4 +81,4 @@ genAddr = do
 
 genAluOp :: H.Gen ALU
 genAluOp = do
-  Gen.choice $ Prelude.map return [ADD, ADC, SBC, SUB, BinaryOp AND, BinaryOp OR, BinaryOp XOR, ID, ShiftOp ASL, ShiftOp LSR, ShiftOp ROL, ShiftOp ROR, CMP]
+  Gen.choice $ Prelude.map return [ADD, ADC, SBC, SUB, BinaryOp AND, BinaryOp OR, BinaryOp XOR, ID, ShiftOp ASL, ShiftOp LSR, ShiftOp ROL, ShiftOp ROR, CMP, BIT]

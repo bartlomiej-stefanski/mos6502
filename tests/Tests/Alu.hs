@@ -179,6 +179,23 @@ prop_alu_bcd_subtraction = H.property do
   (fromActive . _carry $ flags) H.=== resCarryFlag
   (fromActive . _decimal $ flags) H.=== True
 
+prop_alu_bit :: H.Property
+prop_alu_bit = H.property do
+  x <- H.forAll genData
+  y <- H.forAll genData
+
+  let xAndY = x .&. y
+  let expectedFlags = defaultArithmeticFlags {
+    _zero = toActive (xAndY == 0),
+    _negative = toActive (testBit y 7),
+    _overflow = toActive (testBit y 6)
+  }
+
+  let bitAlu = alu BIT defaultArithmeticFlags
+  let (_, flags) = bitAlu x y
+
+  flags H.=== expectedFlags
+
 setNZ :: ArithmeticFlags -> Data -> ArithmeticFlags
 setNZ flags res =
   flags

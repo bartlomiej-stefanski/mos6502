@@ -65,8 +65,7 @@ genCpuState = do
         _regSP = bitCoerce sp,
         _cpuFlags = flags,
         _dataLatch = 0,
-        _instruction = NOP,
-        _addressingMode = Implied
+        _instruction = NOP
       }
 
 genData :: H.Gen Data

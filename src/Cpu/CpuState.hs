@@ -55,9 +55,7 @@ data CpuState
     _cpuFlags :: CpuFlags,
     _dataLatch :: Data,
     -- | Instruction currently being executed.
-    _instruction :: Instruction,
-    -- | Addressing mode for current instruction.
-    _addressingMode :: AddressingMode
+    _instruction :: Instruction
     -- TODO: Include microcode ROM address.
   }
   deriving (Eq, Show, Generic, NFDataX)
@@ -72,6 +70,5 @@ initCpuState =
       _regPC = 0x0000,
       _cpuFlags = defaultCpuFlags,
       _dataLatch = 0,
-      _instruction = NOP,
-      _addressingMode = Implied
+      _instruction = NOP
     }

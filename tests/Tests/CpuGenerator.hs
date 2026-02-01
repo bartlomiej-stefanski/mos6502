@@ -81,3 +81,57 @@ genAddr = do
 genAluOp :: H.Gen ALU
 genAluOp = do
   Gen.choice $ Prelude.map return [ADD, ADC, SBC, SUB, BinaryOp AND, BinaryOp OR, BinaryOp XOR, ID, ShiftOp ASL, ShiftOp LSR, ShiftOp ROL, ShiftOp ROR, CMP, BIT]
+
+genOpcode :: H.Gen Data
+genOpcode = do
+  Gen.choice $ Prelude.map return instructions
+  where
+    lowNibble = [0 .. 7] :: [Unsigned 4]
+    highNibble = [8 .. 15] :: [Unsigned 4]
+    nibble = lowNibble Prelude.++ highNibble
+
+    nibbleConnector h l = bitCoerce (h, l) :: Data
+
+    horizontalStripes = nibbleConnector <$> nibble <*> stripes
+      where
+        stripes = [1, 5, 6, 8, 13] :: [Unsigned 4]
+
+    lowStripes = nibbleConnector <$> lowNibble <*> stripes
+      where
+        stripes = [0, 9, 14] :: [Unsigned 4]
+
+    highStripes = nibbleConnector <$> almostHighNibble <*> stripes
+      where
+        almostHighNibble = [9 .. 15] :: [Unsigned 4]
+        stripes = [0, 9] :: [Unsigned 4]
+
+    ldxImmediate = [0xa2] :: [Data]
+    bitZeropage = [0x24] :: [Data]
+    compareWithX = [0xe4] :: [Data]
+    storeLoadZeroPage = nibbleConnector <$> row <*> [4 :: Unsigned 4]
+      where
+        row = [8 .. 12] :: [Unsigned 4]
+
+    aslAbsolute = [0x0e] :: [Data]
+    transferXImplied = [0x9a] :: [Data]
+    transferLoad = nibbleConnector <$> row <*> stripe
+      where
+        row = [2, 4, 6, 8, 10, 11, 12, 14] :: [Unsigned 4]
+        stripe = [10, 12] :: [Unsigned 4]
+
+    incDecAbsolute = nibbleConnector <$> row <*> [14 :: Unsigned 4]
+      where
+        row = [10 .. 15] :: [Unsigned 4]
+
+    instructions =
+      horizontalStripes
+        Prelude.++ lowStripes
+        Prelude.++ highStripes
+        Prelude.++ ldxImmediate
+        Prelude.++ bitZeropage
+        Prelude.++ compareWithX
+        Prelude.++ storeLoadZeroPage
+        Prelude.++ aslAbsolute
+        Prelude.++ transferXImplied
+        Prelude.++ transferLoad
+        Prelude.++ incDecAbsolute

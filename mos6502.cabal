@@ -139,6 +139,7 @@ test-suite test-library
     Tests.Alu
     Tests.CpuGenerator
     Tests.CpuExecutor
+    Tests.CpuInstructions
   build-depends:
     mos6502,
     QuickCheck,

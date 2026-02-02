@@ -1,6 +1,7 @@
 module Cpu.Microcode.Data where
 
 import Clash.Prelude
+import Cpu.Data
 
 data MicroCmd
   = -- | Execute actual instruction.
@@ -78,3 +79,9 @@ nopMicroOP =
       _incrementPC = False,
       _spOperation = SPNone
     }
+
+type RomSize = 700
+
+type MicroOPRomAddress = Index RomSize
+
+type LinkedMicrocode = (Data, MicroOPRomAddress, [MicroOP])

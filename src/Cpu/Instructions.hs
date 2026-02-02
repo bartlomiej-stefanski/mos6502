@@ -2,7 +2,7 @@ module Cpu.Instructions where
 
 import Clash.Prelude
 import Cpu.Alu
-import Cpu.Cpu
+import Cpu.Data
 
 -- | Address offsets for addressing modes.
 -- Details of interpretation depend on addressing mode.

@@ -99,9 +99,10 @@ library
     DebugTopLevel
     Utilities.SevenSegment
     Utilities.Utils
-    Cpu.Instructions
+    Cpu.Data
     Cpu.Cpu
     Cpu.Alu
+    Cpu.Instructions
     Cpu.CpuState
     Cpu.Executor
     Cpu.Microcode.Data

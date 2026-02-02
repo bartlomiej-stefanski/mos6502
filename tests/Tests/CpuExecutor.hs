@@ -2,8 +2,8 @@ module Tests.CpuExecutor where
 
 import Clash.Prelude
 import Cpu.Alu
-import Cpu.Cpu
 import Cpu.CpuState
+import Cpu.Data
 import Cpu.Executor
 import Cpu.Instructions
 import Cpu.Microcode.Data

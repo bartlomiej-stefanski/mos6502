@@ -88,7 +88,8 @@ common common-options
     clash-prelude >= 1.8.2,
     ghc-typelits-natnormalise,
     ghc-typelits-extra,
-    ghc-typelits-knownnat
+    ghc-typelits-knownnat,
+    template-haskell
 
 library
   import: common-options
@@ -105,6 +106,7 @@ library
     Cpu.Microcode.Data
     Cpu.Microcode.Gen
     Cpu.Microcode.Map
+    Cpu.Microcode.Rom
   default-language: Haskell2010
 
 executable clash

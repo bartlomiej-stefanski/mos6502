@@ -31,8 +31,9 @@ data AddressingMode
     StackPointer
   deriving (Eq, Show, Generic, NFDataX)
 
+-- | Should never be used! Cannot be undefined due to rom creation.
 undefinedAddressingMode :: AddressingMode
-undefinedAddressingMode = errorX "Undefined addressing mode"
+undefinedAddressingMode = Immediate
 
 -- | Branch conditions for BRANCH instruction.
 data BranchCondition
@@ -142,7 +143,7 @@ decodeAluOp = \case
   0b001 -> BinaryOp AND
   0b010 -> BinaryOp XOR
   0b011 -> ADC
-  0b100 -> errorX "Should not decode STA as aluOp"
+  0b100 -> ID -- Should never be used! Cannot be undefined due to rom creation.
   0b101 -> ID
   0b110 -> CMP
   0b111 -> SBC
@@ -188,7 +189,7 @@ decodeLoadAddressing :: BitVector 2 -> AddressingMode
 decodeLoadAddressing = \case
   0b00 -> Immediate
   0b01 -> ZeroPage None
-  0b10 -> errorX "Undefined loadAddressing"
+  0b10 -> Immediate -- Should never be used! Cannot be undefined due to rom creation.
   0b11 -> Absolute None
   _ -> errorX "Impossible: loadAddressing"
 

@@ -10,10 +10,10 @@ data MicroCmd
     CmdDecodeOpcode
   | -- | Do not perform operations.
     CmdNOP
-  deriving (Eq, Show, Generic, NFDataX)
+  deriving (Eq, Show, Generic, NFDataX, Lift)
 
 data BusAddressOffset = NONE | REGX | REGY
-  deriving (Eq, Show, Generic, NFDataX)
+  deriving (Eq, Show, Generic, NFDataX, Lift)
 
 data BusAddress
   = SP
@@ -23,20 +23,20 @@ data BusAddress
   | DATA_LATCH_AND_BUS
   | LAST_BUS_ADDRESS
   | LAST_BUS_ADDRESS_PLUS_ONE
-  deriving (Eq, Show, Generic, NFDataX)
+  deriving (Eq, Show, Generic, NFDataX, Lift)
 
 data BusDataSourceWrite
   = DATA_WRITE_PC_LOW
   | DATA_WRITE_PC_HIGH
   | DATA_WRITE_STATUS
   | DATA_WRITE_ALU
-  deriving (Eq, Show, Generic, NFDataX)
+  deriving (Eq, Show, Generic, NFDataX, Lift)
 
 data BusDataSourceRead
   = DATA_READ_PC
   | DATA_READ_STATUS
   | DATA_READ
-  deriving (Eq, Show, Generic, NFDataX)
+  deriving (Eq, Show, Generic, NFDataX, Lift)
 
 data BusOP
   = BusOP
@@ -48,10 +48,10 @@ data BusOP
     -- | What happens with data on bus.
     _readData :: Maybe BusDataSourceRead
   }
-  deriving (Eq, Show, Generic, NFDataX)
+  deriving (Eq, Show, Generic, NFDataX, Lift)
 
 data SPChange = SPIncrement | SPDecrement | SPNone
-  deriving (Eq, Show, Generic, NFDataX)
+  deriving (Eq, Show, Generic, NFDataX, Lift)
 
 data MicroOP
   = MicroOP
@@ -60,7 +60,7 @@ data MicroOP
     _incrementPC :: Bool,
     _spOperation :: SPChange
   }
-  deriving (Eq, Show, Generic, NFDataX)
+  deriving (Eq, Show, Generic, NFDataX, Lift)
 
 type MicroOpIndex = Index 1024
 

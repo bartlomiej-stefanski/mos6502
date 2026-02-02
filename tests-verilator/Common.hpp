@@ -15,14 +15,18 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
+constexpr u16 NmiVector{0xFFFC};
+constexpr u16 ResetVector{0xFFFC};
+constexpr u16 InterruptVector{0xFFFC};
+
 template< typename T >
 void reset_cpu(T& cpu)
 {
-  cpu.RESET = 0;
-  cpu.CLK= 0;
+  cpu.RESET = 1;
+  cpu.CLK = 0;
   cpu.eval();
 
-  cpu.RESET = 1;
+  cpu.RESET = 0;
   cpu.eval();
 }
 

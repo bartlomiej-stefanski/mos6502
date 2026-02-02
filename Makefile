@@ -2,7 +2,8 @@ CXX = g++
 VERILATOR = verilator
 
 VERILOG_TEST_SUITES = \
-	SanityCheck
+	SanityCheck \
+	ResetCheck
 
 SOURCEDIR := $(abspath tests-verilator)
 VERILOG_SOURCEDIR := $(abspath verilog/DebugTopLevel.topEntity)
@@ -51,10 +52,6 @@ vtest: only-tests
   done
 
 test: test-prop vtest
-	@for test_suite in $(VERILOG_TEST_SUITES); do \
-	  echo -e "---------- RUNNING TEST SUITE $$test_suite ----------" ; \
-    $(BUILDDIR)/$$test_suite/VtopEntity ; \
-  done
 
 full: compile-clash test
 

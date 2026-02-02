@@ -26,3 +26,9 @@ jobs:
 
       - name: Cabal Test
         run: nix develop .#ci --command cabal test
+
+      - name: Compile Clash to Verilog
+        run: nix develop .#ci --command make compile-clash
+
+      - name: Run Verilator Simulation
+        run: nix develop .#ci --command make vtest

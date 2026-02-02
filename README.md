@@ -14,4 +14,10 @@ cabal run clash TopLevel -- --${hdl_language}
 
 # Run tests
 cabal test
+
+# Generate Debug Verilog
+make compile-clash
+
+# Run Verilator Tests
+make vtest
 ```

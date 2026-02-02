@@ -42,8 +42,10 @@
           ormolu
 
           gnumake
+          ninja
           gcc
           pkg-config
+          gtest
 
           verilator
         ];
@@ -62,10 +64,7 @@
           bear
 
           # C++ Dev
-          cmake
-          ninja
           clang-tools
-          gtest
           gdb
           clang-manpages
 

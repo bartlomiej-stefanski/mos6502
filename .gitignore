@@ -25,3 +25,8 @@ cabal.project.local~
 
 # Verilated haskell code artifacts
 verilog
+
+# Ignore verilator test artifacts
+.build
+compile_commands.json
+.cache

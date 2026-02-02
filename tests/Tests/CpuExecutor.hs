@@ -19,7 +19,7 @@ import qualified Prelude
 nopInputData :: InputData
 nopInputData =
   InputData
-    { _busData = Nothing,
+    { _busData = 0,
       _lastBusAddress = errorX "Should not use uninitialized lastBusAddress",
       _microOP = nopMicroOP
     }
@@ -52,7 +52,7 @@ prop_handles_bus_read = H.property do
   let inputData =
         nopInputData
           { _microOP = nopMicroOP {_busOp = busOp, _incrementPC = incrementPC},
-            _busData = Just busInput
+            _busData = busInput
           }
   let latchBusData cpuS = cpuS {_dataLatch = busInput}
   let expectedState = pcIncrementer incrementPC $ case readOp of
@@ -92,7 +92,7 @@ prop_handles_bus_write = H.property do
   let inputData =
         nopInputData
           { _microOP = nopMicroOP {_busOp = busOp, _incrementPC = incrementPC},
-            _busData = Just busInput,
+            _busData = busInput,
             _lastBusAddress = lastBusAddress
           }
 
@@ -150,7 +150,7 @@ prop_handles_bus_read_and_write = H.property do
   let inputData =
         nopInputData
           { _microOP = nopMicroOP {_busOp = busOp, _incrementPC = incrementPC},
-            _busData = Just busInput,
+            _busData = busInput,
             _lastBusAddress = lastBusAddress
           }
 
@@ -248,7 +248,7 @@ prop_handles_branch_operations = H.property do
                   _busOp = nopBusOP {_address = Nothing},
                   _incrementPC = incrementPC
                 },
-            _busData = Just busInput
+            _busData = busInput
           }
   let cpuWithInstruction = cpuState {_instruction = BRANCH branchCondition}
   let shouldJump = shouldTakeBranch branchCondition (_arithmeticFlags $ _cpuFlags cpuWithInstruction)
@@ -300,7 +300,7 @@ prop_handles_alu_operations = H.property do
   let inputData =
         nopInputData
           { _microOP = microOP,
-            _busData = Just busInput
+            _busData = busInput
           }
   let cpuWithInstruction = cpuState {_instruction = instruction}
 

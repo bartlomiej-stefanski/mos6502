@@ -6,7 +6,8 @@ import Clash.Prelude
 import Cpu.Microcode.Data
 import Cpu.Microcode.Map
 
-microcodeRom :: (HiddenClockResetEnable dom) => Signal dom (Unsigned 10) -> Signal dom MicroOP
-microcodeRom =
-  rom
-    $(listToVecTH rawMicrocodeList)
+opcodeMapperRom :: Vec 256 MicroOPRomAddress
+opcodeMapperRom = $(listToVecTH addrLookupList)
+
+microcodeRom :: (HiddenClockResetEnable dom) => Signal dom MicroOPRomAddress -> Signal dom MicroOP
+microcodeRom addr = rom $(listToVecTH rawMicrocodeList) (bitCoerce <$> addr)

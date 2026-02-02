@@ -6,7 +6,7 @@ import Cpu.Cpu
 import Cpu.CpuState
 import Cpu.Instructions
 import Cpu.Microcode.Data
-import Cpu.Microcode.Map
+import Cpu.Microcode.Rom
 import Utilities.Utils
 
 shouldTakeBranch :: BranchCondition -> ArithmeticFlags -> Bool
@@ -192,8 +192,8 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
       CmdDecodeOpcode -> setNextMicroOp baseOutputData
       CmdNOP -> baseOutputData
 
-    (nextInstruction, nextAddressingMode) = decode (fromJustX dataOnBus)
-    nextMicroOpIndex = nextMicrocodeIndex (nextInstruction, nextAddressingMode)
+    (nextInstruction, _) = decode (fromJustX dataOnBus)
+    nextMicroOpIndex = opcodeMapperRom !! fromJustX dataOnBus
     setNextMicroOp oData = oData {_nextMicroOp = Just nextMicroOpIndex}
     setNextInstruction cpuS = cpuS {_instruction = nextInstruction}
 

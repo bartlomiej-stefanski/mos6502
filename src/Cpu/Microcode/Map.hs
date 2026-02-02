@@ -4,9 +4,18 @@ import Clash.Prelude
 import Cpu.Cpu
 import Cpu.Instructions
 import Cpu.Microcode.Data
+import Cpu.Microcode.Gen
+import qualified Data.List (mapAccumL)
+import qualified Prelude
 
+-- TODO: Remove this
 nextMicrocodeIndex :: (Instruction, AddressingMode) -> MicroOpIndex
 nextMicrocodeIndex = errorX "Not implemented"
+
+microcodeInstructions :: (Instruction, AddressingMode) -> [MicroOP]
+microcodeInstructions instr =
+  Prelude.map (\f -> f nopMicroOP) (microcodeGenerator instr)
+    Prelude.++ [nopMicroOP {_cmd = CmdDecodeOpcode}]
 
 {- ORMOLU_DISABLE -}
 opcodeList :: [Data]
@@ -28,3 +37,25 @@ opcodeList = [
     0xE0, 0xE1,             0xE4, 0xE5, 0xE6,       0xE8, 0xE9, 0xEA,       0xEC, 0xED, 0xEE,
     0xF0, 0xF1,                   0xF5, 0xF6,       0xF8, 0xF9,                   0xFD, 0xFE
   ]
+{- ORMOLU_ENABLE -}
+
+microInstructionList :: [(Data, [MicroOP])]
+microInstructionList = Prelude.map (\opcode -> (opcode, microcodeInstructions $ decode opcode)) opcodeList
+
+type RomSize = 1024
+
+type MicroOPRomAddress = Index RomSize
+
+type LinkedMicrocode = (Data, MicroOPRomAddress, [MicroOP])
+
+linkMicrocode :: [(Data, [MicroOP])] -> [LinkedMicrocode]
+linkMicrocode microcodeList = snd $ Data.List.mapAccumL calcAddress (0 :: MicroOPRomAddress) microcodeList
+  where
+    calcAddress :: MicroOPRomAddress -> (Data, [MicroOP]) -> (MicroOPRomAddress, LinkedMicrocode)
+    calcAddress acc curr = (acc + currLen, (fst curr, acc, microOps))
+      where
+        microOps = snd curr
+        currLen = fromIntegral $ Prelude.length microOps :: MicroOPRomAddress
+
+rawMicrocodeList :: [MicroOP]
+rawMicrocodeList = Prelude.concatMap (\(_, _, ops) -> ops) (linkMicrocode microInstructionList)

@@ -1,7 +1,7 @@
 module Cpu.Alu where
 
 import Clash.Prelude
-import Cpu.Cpu
+import Cpu.Data
 import Utilities.Utils
 
 data ArithmeticFlags = ArithmeticFlags

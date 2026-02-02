@@ -1,7 +1,7 @@
 module Cpu.Microcode.Map where
 
 import Clash.Prelude
-import Cpu.Cpu
+import Cpu.Data
 import Cpu.Instructions
 import Cpu.Microcode.Data
 import Cpu.Microcode.Gen
@@ -37,12 +37,6 @@ opcodeList = [
 
 microInstructionList :: [(Data, [MicroOP])]
 microInstructionList = Prelude.map (\opcode -> (opcode, microcodeInstructions $ decode opcode)) opcodeList
-
-type RomSize = 700
-
-type MicroOPRomAddress = Index RomSize
-
-type LinkedMicrocode = (Data, MicroOPRomAddress, [MicroOP])
 
 linkMicrocode :: [(Data, [MicroOP])] -> [LinkedMicrocode]
 linkMicrocode microcodeList = snd $ Data.List.mapAccumL calcAddress (0 :: MicroOPRomAddress) microcodeList

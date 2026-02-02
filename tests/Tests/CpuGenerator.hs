@@ -2,8 +2,8 @@ module Tests.CpuGenerator where
 
 import Clash.Prelude
 import Cpu.Alu
-import Cpu.Cpu
 import Cpu.CpuState
+import Cpu.Data
 import Cpu.Instructions
 import Cpu.Microcode.Map
 import qualified Hedgehog as H

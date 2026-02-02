@@ -2,7 +2,7 @@ module Cpu.CpuState where
 
 import Clash.Prelude
 import Cpu.Alu
-import Cpu.Cpu
+import Cpu.Data
 import Cpu.Instructions
 import Utilities.Utils
 

@@ -8,10 +8,6 @@ import Cpu.Microcode.Gen
 import qualified Data.List (mapAccumL)
 import qualified Prelude
 
--- TODO: Remove this
-nextMicrocodeIndex :: (Instruction, AddressingMode) -> MicroOpIndex
-nextMicrocodeIndex = errorX "Not implemented"
-
 microcodeInstructions :: (Instruction, AddressingMode) -> [MicroOP]
 microcodeInstructions instr =
   Prelude.map (\f -> f nopMicroOP) (microcodeGenerator instr)
@@ -42,7 +38,7 @@ opcodeList = [
 microInstructionList :: [(Data, [MicroOP])]
 microInstructionList = Prelude.map (\opcode -> (opcode, microcodeInstructions $ decode opcode)) opcodeList
 
-type RomSize = 1024
+type RomSize = 700
 
 type MicroOPRomAddress = Index RomSize
 

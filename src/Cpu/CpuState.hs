@@ -56,7 +56,6 @@ data CpuState
     _dataLatch :: Data,
     -- | Instruction currently being executed.
     _instruction :: Instruction
-    -- TODO: Include microcode ROM address.
   }
   deriving (Eq, Show, Generic, NFDataX)
 

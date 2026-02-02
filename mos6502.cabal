@@ -96,6 +96,7 @@ library
   hs-source-dirs: src
   exposed-modules:
     TopLevel
+    DebugTopLevel
     Utilities.SevenSegment
     Utilities.Utils
     Cpu.Instructions

@@ -6,6 +6,7 @@ import Cpu.Cpu
 import Cpu.CpuState
 import Cpu.Instructions
 import Cpu.Microcode.Data
+import Cpu.Microcode.Map
 import Cpu.Microcode.Rom
 import Utilities.Utils
 
@@ -102,7 +103,7 @@ executeCpuInstruction dataOnBus cpuState =
 
 data InputData
   = InputData
-  { _busData :: Maybe Data,
+  { _busData :: Data,
     _lastBusAddress :: Addr,
     _microOP :: MicroOP
   }
@@ -113,7 +114,7 @@ data OutputData
   { _busAddress :: Maybe Addr,
     _busWriteData :: Maybe Data,
     -- | Used by the CPU to indicate the next microcode operation to execute.
-    _nextMicroOp :: Maybe MicroOpIndex
+    _nextMicroOp :: Maybe MicroOPRomAddress
   }
   deriving (Eq, Show, Generic, NFDataX)
 
@@ -131,10 +132,10 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
 
     busOP = _busOp microOP
     readData = _readData busOP
-    latchBusData cpuS = cpuS {_dataLatch = fromJustX dataOnBus}
+    latchBusData cpuS = cpuS {_dataLatch = dataOnBus}
     applyReadData cpuS = case readData of
-      Just DATA_READ_PC -> latchBusData cpuS {_regPC = bitCoerce (fromJustX dataOnBus, _dataLatch cpuState)}
-      Just DATA_READ_STATUS -> latchBusData cpuS {_cpuFlags = cpuFlagsFromData $ fromJustX dataOnBus}
+      Just DATA_READ_PC -> latchBusData cpuS {_regPC = bitCoerce (dataOnBus, _dataLatch cpuState)}
+      Just DATA_READ_STATUS -> latchBusData cpuS {_cpuFlags = cpuFlagsFromData $ dataOnBus}
       Just DATA_READ -> latchBusData cpuS
       Nothing -> cpuS
 
@@ -157,8 +158,8 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
           -- SP points to the next free location -> increment before use.
           SP_INC -> zeroExtend (_regSP cpuState + 1)
           PC -> _regPC cpuState
-          BUS_VALUE -> zeroExtend $ fromJustX dataOnBus
-          DATA_LATCH_AND_BUS -> bitCoerce (fromJustX dataOnBus, _dataLatch cpuState)
+          BUS_VALUE -> zeroExtend $ dataOnBus
+          DATA_LATCH_AND_BUS -> bitCoerce (dataOnBus, _dataLatch cpuState)
           LAST_BUS_ADDRESS -> _lastBusAddress inputData
           LAST_BUS_ADDRESS_PLUS_ONE -> _lastBusAddress inputData + 1
 
@@ -178,7 +179,7 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
       Nothing -> Nothing
 
     (postExecCpuState, aluOutputData) =
-      executeCpuInstruction (fromJustX dataOnBus) cpuState
+      executeCpuInstruction dataOnBus cpuState
 
     baseOutputData =
       OutputData
@@ -192,8 +193,8 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
       CmdDecodeOpcode -> setNextMicroOp baseOutputData
       CmdNOP -> baseOutputData
 
-    (nextInstruction, _) = decode (fromJustX dataOnBus)
-    nextMicroOpIndex = opcodeMapperRom !! fromJustX dataOnBus
+    (nextInstruction, _) = decode dataOnBus
+    nextMicroOpIndex = opcodeMapperRom !! dataOnBus
     setNextMicroOp oData = oData {_nextMicroOp = Just nextMicroOpIndex}
     setNextInstruction cpuS = cpuS {_instruction = nextInstruction}
 
@@ -202,9 +203,85 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
       CmdDecodeOpcode -> setNextInstruction cpuState
       CmdNOP -> cpuState
 
+data CpuStateWithBus
+  = CpuStateWithBus
+  { _cpuState :: CpuState,
+    _busAddressLatch :: Addr,
+    _microcodeLatch :: MicroOPRomAddress
+  }
+  deriving (Eq, Show, Generic, NFDataX)
+
+initCpuStateWithBus :: CpuStateWithBus
+initCpuStateWithBus =
+  CpuStateWithBus
+    { _cpuState = initCpuState,
+      _busAddressLatch = 0,
+      _microcodeLatch = 0
+    }
+
+data DirectBusOp
+  = DirectBusOp
+  { _addressToQuery :: Addr,
+    _dataToWrite :: Data,
+    _shouldWrite :: Active High,
+    _microOPQuery :: MicroOPRomAddress
+  }
+  deriving (Eq, Show, Generic, NFDataX)
+
+cpuWithBus :: CpuStateWithBus -> (Data, MicroOP) -> (CpuStateWithBus, DirectBusOp)
+cpuWithBus cpuStateWithPBus (busData, microOP) =
+  ( CpuStateWithBus
+      { _cpuState = cpuS,
+        _busAddressLatch = case _busAddress outData of
+          Just addr -> addr
+          Nothing -> _busAddressLatch cpuStateWithPBus,
+        _microcodeLatch = nextMicrocode
+      },
+    DirectBusOp
+      { _addressToQuery = fromJustX $ _busAddress outData,
+        _dataToWrite = fromJustX $ _busWriteData outData,
+        _shouldWrite = shouldWrite,
+        _microOPQuery = fromJustX $ _nextMicroOp outData
+      }
+  )
+  where
+    inputData =
+      InputData
+        { _busData = busData,
+          _lastBusAddress = _busAddressLatch cpuStateWithPBus,
+          _microOP = microOP
+        }
+
+    (cpuS, outData) = cpuExecutor (_cpuState cpuStateWithPBus) inputData
+
+    shouldWrite = case _busWriteData outData of
+      Just _ -> toActive True
+      Nothing -> toActive False
+
+    nextMicrocode = case _nextMicroOp outData of
+      Just idx -> idx
+      Nothing -> _microcodeLatch cpuStateWithPBus + 1
+
 cpuMealy ::
   (HiddenClockResetEnable dom) =>
-  CpuState ->
-  Signal dom InputData ->
-  Signal dom OutputData
-cpuMealy = mealy cpuExecutor
+  Signal dom (Data, MicroOP) ->
+  Signal dom DirectBusOp
+cpuMealy = mealy cpuWithBus initCpuStateWithBus
+
+data DebugOutputData
+  = DebugOutputData
+  { _directBusOp :: DirectBusOp,
+    _debugCpuState :: CpuState
+  }
+
+-- | Mealy CPU with additional debug data in OutputData.
+debugCpuMealy ::
+  (HiddenClockResetEnable dom) =>
+  Signal dom (Data, MicroOP) ->
+  Signal dom DebugOutputData
+debugCpuMealy = mealy debugCpuExecutor initCpuStateWithBus
+  where
+    debugCpuExecutor :: CpuStateWithBus -> (Data, MicroOP) -> (CpuStateWithBus, DebugOutputData)
+    debugCpuExecutor initState inputData =
+      let (newCpuState, busOP) = cpuWithBus initState inputData
+       in (newCpuState, DebugOutputData busOP (_cpuState newCpuState))

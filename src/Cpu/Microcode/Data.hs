@@ -62,8 +62,6 @@ data MicroOP
   }
   deriving (Eq, Show, Generic, NFDataX, Lift)
 
-type MicroOpIndex = Index 1024
-
 nopBusOP :: BusOP
 nopBusOP =
   BusOP

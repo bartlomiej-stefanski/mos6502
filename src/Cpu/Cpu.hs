@@ -4,7 +4,9 @@ import Clash.Prelude
 import Cpu.CpuState
 import Cpu.Data
 import Cpu.Executor
+import Cpu.Instructions
 import Cpu.Microcode.Data
+import Cpu.Microcode.Rom
 import Utilities.Utils
 
 data CpuStateWithBus
@@ -20,7 +22,7 @@ initCpuStateWithBus =
   CpuStateWithBus
     { _cpuState = initCpuState,
       _busAddressLatch = 0,
-      _microcodeLatch = 0
+      _microcodeLatch = opcodeMapperRom !! jmpAbsoluteOpcode
     }
 
 data DirectBusOp

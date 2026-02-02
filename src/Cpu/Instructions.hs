@@ -276,3 +276,6 @@ decode op = case op of
 
     loadTarget = Just if testBit op 1 then RegX else RegY
     loadAddressing = decodeLoadAddressing $ slice d4 d3 op
+
+jmpAbsoluteOpcode :: Data
+jmpAbsoluteOpcode = 0x4C

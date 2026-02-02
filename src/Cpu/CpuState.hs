@@ -63,6 +63,15 @@ data CpuState
 spOffset :: Addr
 spOffset = 0x0100
 
+nmiVector :: Addr
+nmiVector = 0xFFFA
+
+resetVector :: Addr
+resetVector = 0xFFFC
+
+interruptVector :: Addr
+interruptVector = 0xFFFE
+
 initCpuState :: CpuState
 initCpuState =
   CpuState
@@ -70,8 +79,8 @@ initCpuState =
       _regX = 0,
       _regY = 0,
       _regSP = 0xFF,
-      _regPC = 0x0000,
+      _regPC = resetVector,
       _cpuFlags = defaultCpuFlags,
       _dataLatch = 0,
-      _instruction = NOP
+      _instruction = JMP
     }

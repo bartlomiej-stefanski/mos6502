@@ -59,6 +59,10 @@ data CpuState
   }
   deriving (Eq, Show, Generic, NFDataX)
 
+-- | Offset of the stack pointer in the memory map.
+spOffset :: Addr
+spOffset = 0x0100
+
 initCpuState :: CpuState
 initCpuState =
   CpuState

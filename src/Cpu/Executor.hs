@@ -153,11 +153,11 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
       where
         rawBusAddress :: Addr
         rawBusAddress = case busAddress of
-          SP -> zeroExtend $ _regSP cpuState
+          SP -> spOffset .|. zeroExtend (_regSP cpuState)
           -- SP points to the next free location -> increment before use.
-          SP_INC -> zeroExtend (_regSP cpuState + 1)
+          SP_INC -> spOffset .|. zeroExtend (_regSP cpuState + 1)
           PC -> _regPC cpuState
-          BUS_VALUE -> zeroExtend $ dataOnBus
+          BUS_VALUE -> zeroExtend dataOnBus
           DATA_LATCH_AND_BUS -> bitCoerce (dataOnBus, _dataLatch cpuState)
           LAST_BUS_ADDRESS -> _lastBusAddress inputData
           LAST_BUS_ADDRESS_PLUS_ONE -> _lastBusAddress inputData + 1

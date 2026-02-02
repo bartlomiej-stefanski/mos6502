@@ -105,8 +105,8 @@ prop_handles_bus_write = H.property do
         REGY -> zeroExtend y
   let expectedBusAddress =
         offset + case address of
-          SP -> zeroExtend sp
-          SP_INC -> zeroExtend (sp + 1)
+          SP -> spOffset .|. zeroExtend sp
+          SP_INC -> spOffset .|. zeroExtend (sp + 1)
           PC -> pc
           BUS_VALUE -> zeroExtend busInput
           DATA_LATCH_AND_BUS -> bitCoerce (busInput, cpuDataLatch)
@@ -172,8 +172,8 @@ prop_handles_bus_read_and_write = H.property do
         REGY -> zeroExtend y
   let expectedBusAddress =
         offset + case address of
-          SP -> zeroExtend sp
-          SP_INC -> zeroExtend (sp + 1)
+          SP -> spOffset .|. zeroExtend sp
+          SP_INC -> spOffset .|. zeroExtend (sp + 1)
           PC -> pc
           BUS_VALUE -> zeroExtend busInput
           DATA_LATCH_AND_BUS -> bitCoerce (busInput, cpuDataLatch)

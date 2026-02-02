@@ -30,3 +30,20 @@ verilog
 .build
 compile_commands.json
 .cache
+
+# Ignore Quartus Files
+c5_pin_model_dump.txt
+db/
+incremental_db/
+greybox_tmp/
+*.bak
+*.summary
+*.rpt
+*.done
+*.pin
+*.sld
+*.sof
+*.qdf
+*.smsg
+*.jdi
+*.qws

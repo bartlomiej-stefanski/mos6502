@@ -1,7 +1,6 @@
 module Cpu.Cpu where
 
 import Clash.Prelude
-import Cpu.Alu
 import Cpu.CpuState
 import Cpu.Data
 import Cpu.Executor
@@ -37,16 +36,15 @@ cpuWithBus :: CpuStateWithBus -> (Data, MicroOP) -> (CpuStateWithBus, DirectBusO
 cpuWithBus cpuStateWithPBus (busData, microOP) =
   ( CpuStateWithBus
       { _cpuState = cpuS,
-        _busAddressLatch = case _busAddress outData of
-          Just addr -> addr
-          Nothing -> _busAddressLatch cpuStateWithPBus,
+        _busAddressLatch = queryAddress,
         _microcodeLatch = nextMicrocode
       },
     DirectBusOp
-      { _addressToQuery = fromJustX $ _busAddress outData,
+      { _addressToQuery = queryAddress,
+        -- If we do not write the data is irrelevant.
         _dataToWrite = fromJustX $ _busWriteData outData,
         _shouldWrite = shouldWrite,
-        _microOPQuery = fromJustX $ _nextMicroOp outData
+        _microOPQuery = nextMicrocode
       }
   )
   where
@@ -67,6 +65,10 @@ cpuWithBus cpuStateWithPBus (busData, microOP) =
       Just idx -> idx
       Nothing -> _microcodeLatch cpuStateWithPBus + 1
 
+    queryAddress = case _busAddress outData of
+      Just addr -> addr
+      Nothing -> _busAddressLatch cpuStateWithPBus
+
 cpuMealy ::
   (HiddenClockResetEnable dom) =>
   Signal dom (Data, MicroOP) ->
@@ -78,6 +80,7 @@ data DebugOutputData
   { _directBusOp :: DirectBusOp,
     _debugCpuState :: CpuState
   }
+  deriving (Eq, Show, Generic, NFDataX)
 
 -- | Mealy CPU with additional debug data in OutputData.
 debugCpuMealy ::

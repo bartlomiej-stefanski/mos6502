@@ -4,13 +4,23 @@ import Clash.Prelude
 import Cpu.Alu
 import Cpu.CpuState
 import Cpu.Data
+import Cpu.Executor
 import Cpu.Instructions
+import Cpu.Microcode.Data
 import Cpu.Microcode.Map
 import qualified Hedgehog as H
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import Utilities.Utils
 import qualified Prelude
+
+nopInputData :: InputData
+nopInputData =
+  InputData
+    { _busData = 0,
+      _lastBusAddress = errorX "Should not use uninitialized lastBusAddress",
+      _microOP = nopMicroOP
+    }
 
 -- | Generates a random ArithmeticFlags for use in property tests.
 genArithmeticFlags :: H.Gen ArithmeticFlags
@@ -66,7 +76,8 @@ genCpuState = do
         _regSP = bitCoerce sp,
         _cpuFlags = flags,
         _dataLatch = 0,
-        _instruction = NOP
+        _instruction = NOP,
+        _sync_after_reset = False
       }
 
 genData :: H.Gen Data

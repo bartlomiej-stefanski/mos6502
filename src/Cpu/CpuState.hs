@@ -55,7 +55,9 @@ data CpuState
     _cpuFlags :: CpuFlags,
     _dataLatch :: Data,
     -- | Instruction currently being executed.
-    _instruction :: Instruction
+    _instruction :: Instruction,
+    -- | Synchronize CPU with ROM after reset.
+    _sync_after_reset :: Bool
   }
   deriving (Eq, Show, Generic, NFDataX)
 
@@ -82,5 +84,6 @@ initCpuState =
       _regPC = resetVector,
       _cpuFlags = defaultCpuFlags,
       _dataLatch = 0,
-      _instruction = JMP
+      _instruction = JMP,
+      _sync_after_reset = True
     }

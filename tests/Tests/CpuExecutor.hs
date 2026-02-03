@@ -16,14 +16,6 @@ import Tests.CpuGenerator
 import Utilities.Utils
 import qualified Prelude
 
-nopInputData :: InputData
-nopInputData =
-  InputData
-    { _busData = 0,
-      _lastBusAddress = errorX "Should not use uninitialized lastBusAddress",
-      _microOP = nopMicroOP
-    }
-
 pcIncrementer :: Bool -> CpuState -> CpuState
 pcIncrementer inc cpuState =
   if inc

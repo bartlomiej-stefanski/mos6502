@@ -36,19 +36,7 @@ data DirectBusOp
 
 cpuWithBus :: CpuStateWithBus -> (Data, MicroOP) -> (CpuStateWithBus, DirectBusOp)
 cpuWithBus cpuStateWithPBus (busData, microOP) =
-  ( CpuStateWithBus
-      { _cpuState = cpuS,
-        _busAddressLatch = queryAddress,
-        _microcodeLatch = nextMicrocode
-      },
-    DirectBusOp
-      { _addressToQuery = queryAddress,
-        -- If we do not write the data is irrelevant.
-        _dataToWrite = fromJustX $ _busWriteData outData,
-        _shouldWrite = shouldWrite,
-        _microOPQuery = nextMicrocode
-      }
-  )
+  if shouldSyncRom then syncResult else normalOperationResult
   where
     inputData =
       InputData
@@ -70,6 +58,32 @@ cpuWithBus cpuStateWithPBus (busData, microOP) =
     queryAddress = case _busAddress outData of
       Just addr -> addr
       Nothing -> _busAddressLatch cpuStateWithPBus
+
+    normalOperationResult =
+      ( CpuStateWithBus
+          { _cpuState = cpuS,
+            _busAddressLatch = queryAddress,
+            _microcodeLatch = nextMicrocode
+          },
+        DirectBusOp
+          { _addressToQuery = queryAddress,
+            -- If we do not write the data is irrelevant.
+            _dataToWrite = fromJustX $ _busWriteData outData,
+            _shouldWrite = shouldWrite,
+            _microOPQuery = nextMicrocode
+          }
+      )
+
+    shouldSyncRom = _sync_after_reset (_cpuState cpuStateWithPBus)
+    syncResult =
+      ( initCpuStateWithBus {_cpuState = (_cpuState initCpuStateWithBus) {_sync_after_reset = False}},
+        DirectBusOp
+          { _addressToQuery = 0,
+            _dataToWrite = 0,
+            _shouldWrite = toActive False,
+            _microOPQuery = _microcodeLatch cpuStateWithPBus
+          }
+      )
 
 cpuMealy ::
   (HiddenClockResetEnable dom) =>

@@ -15,9 +15,13 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
-constexpr u16 NmiVector{0xFFFC};
-constexpr u16 ResetVector{0xFFFC};
-constexpr u16 InterruptVector{0xFFFC};
+using Addr = u16;
+
+constexpr Addr NmiVector{0xFFFC};
+constexpr Addr ResetVector{0xFFFC};
+constexpr Addr InterruptVector{0xFFFC};
+
+constexpr Addr StackStart{0x100};
 
 template< typename T >
 void reset_cpu(T& cpu)

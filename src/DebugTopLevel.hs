@@ -29,22 +29,30 @@ topEntity ::
     "OVF_AF" ::: Signal System (Active High),
     "DEC_AF" ::: Signal System (Active High),
     "ZERO_AF" ::: Signal System (Active High),
-    "CARRY_AF" ::: Signal System (Active High)
+    "CARRY_AF" ::: Signal System (Active High),
+    "LATCH" ::: Signal System Data
   )
-topEntity clk rst enable busInput = (memAddr, memW, memWData, pc, sp, regA, regX, regY, brkF, intF, negAF, ovfAF, decAF, zeroAF, carryAF)
+topEntity clk rst enable busInput = (memAddr, memW, memWData, pc, sp, regA, regX, regY, brkF, intF, negAF, ovfAF, decAF, zeroAF, carryAF, latch)
   where
-    debugOutputData = withClockResetEnable clk rst enable $ debugCpuMealy (bundle (busInput, currentMicroOP))
+    debugOutputData = withClockResetEnable clk rst enable $ debugCpuMealy (bundle (busInput, microOP))
 
     directBusOp = _directBusOp <$> debugOutputData
 
-    currentMicroOP :: Signal System MicroOP
-    currentMicroOP = withClockResetEnable clk rst enable $ microcodeRom (_microOPQuery <$> directBusOp)
+    -- directBusOp is combinational circuit output -> it must be latched to guarantee stability
+    memAddr = withClockResetEnable clk rst enable $ register 0 (_addressToQuery <$> directBusOp)
+    memW = withClockResetEnable clk rst enable $ register (toActive False) (_shouldWrite <$> directBusOp)
+    memWData = withClockResetEnable clk rst enable $ register 0 (_dataToWrite <$> directBusOp)
 
-    memAddr = _addressToQuery <$> directBusOp
-    memW = _shouldWrite <$> directBusOp
-    memWData = _dataToWrite <$> directBusOp
+    -- microOpQuery will be latched in microcodeRom - it must pass-through here
+    microOPQuery = _microOPQuery <$> directBusOp
 
-    cpuState = _debugCpuState <$> debugOutputData
+    microOP :: Signal System MicroOP
+    microOP = withClockResetEnable clk rst enable $ microcodeRom microOPQuery
+
+    -- cpuState is 'packed into' mealy output and so it is not latched.
+    -- For verilator testing stable values are needed -> latch it here.
+    cpuState = withClockResetEnable clk rst enable $ register initCpuState (_debugCpuState <$> debugOutputData)
+
     pc = _regPC <$> cpuState
     sp = _regSP <$> cpuState
     regA = _regA <$> cpuState
@@ -61,5 +69,7 @@ topEntity clk rst enable busInput = (memAddr, memW, memWData, pc, sp, regA, regX
     decAF = _decimal <$> arithFlags
     zeroAF = _zero <$> arithFlags
     carryAF = _carry <$> arithFlags
+
+    latch = _dataLatch <$> cpuState
 
 makeTopEntity 'topEntity

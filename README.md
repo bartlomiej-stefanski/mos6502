@@ -1,5 +1,10 @@
 # MOS 6502. in *Clash*.
 
+## Dependencies
+
+Nix development environment is provided in form of a `flake.nix` file.  
+It uses unstable packages to get the newest verilator possible (should work with stable ones).
+
 ## Building
 
 ```sh

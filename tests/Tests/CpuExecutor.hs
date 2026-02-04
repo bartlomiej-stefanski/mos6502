@@ -354,6 +354,40 @@ prop_handles_alu_operations = H.property do
   newState H.=== expectedCpuState
   outputData H.=== expectedOutputData
 
+prop_data_latch :: H.Property
+prop_data_latch = H.property do
+  cpuState <- H.forAll genCpuState
+
+  latch <- H.forAll genData
+  busData <- H.forAll genData
+
+  let cpuWithBusData = cpuState {_dataLatch = latch}
+  let inputData =
+        nopInputData
+          { _busData = busData,
+            _microOP =
+              nopMicroOP
+                { _busOp =
+                    nopBusOP
+                      { _readData = Just DATA_READ,
+                        _address = Just (DATA_LATCH_AND_BUS, NONE)
+                      }
+                }
+          }
+
+  let expectedState = cpuWithBusData {_dataLatch = busData}
+  let expectedOutputData =
+        OutputData
+          { _busAddress = Just $ bitCoerce (busData, latch),
+            _busWriteData = Nothing,
+            _nextMicroOp = Nothing
+          }
+
+  let (newState, outputData) = cpuExecutor cpuWithBusData inputData
+
+  expectedState H.=== newState
+  expectedOutputData H.=== outputData
+
 cpuExecutorTests :: TestTree
 cpuExecutorTests = $(testGroupGenerator)
 

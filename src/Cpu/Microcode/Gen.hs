@@ -83,12 +83,7 @@ microcodeGenerator (instruction, addressingMode) =
     (BRK, _) -> [placeNextOpcodeOnBus]
     -- RTI instruction not implemented!
     (RTI, _) -> [placeNextOpcodeOnBus]
-    (JMP, _) ->
-      -- After 'loadToBus' the PCLow is available on bus
-      loadToBus id
-        Prelude.++ [ readFromBus DATA_READ . placeDataOnBus LAST_BUS_ADDRESS_PLUS_ONE NONE,
-                     microOPIncrementPC . readFromBus DATA_READ_PC . placeDataOnBus DATA_LATCH_AND_BUS NONE
-                   ]
+    (JMP, _) -> loadToBus (microOPIncrementPC . readFromBus DATA_READ_PC)
     -- TODO: Fetch next opcode on the same cycle the branch is taken.
     (BRANCH _, _) -> [placeImmediatOnBus, executeCmd, placeNextOpcodeOnBus]
     (Compute _ (ALUConnect left right output) _, _) ->

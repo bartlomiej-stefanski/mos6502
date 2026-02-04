@@ -53,14 +53,14 @@ linkedMicrocode = linkMicrocode microInstructionList
 rawMicrocodeList :: [MicroOP]
 rawMicrocodeList = Prelude.concatMap (\(_, _, ops) -> ops) linkedMicrocode
 
-findMicroOPOr :: Data -> MicroOPRomAddress -> MicroOPRomAddress
-findMicroOPOr opcode ifNotFound = case Prelude.filter (\(op, _, _) -> op == opcode) linkedMicrocode of
-  [] -> ifNotFound
-  ((_, addr, _) : _) -> addr
-
 addrLookupList :: [MicroOPRomAddress]
 addrLookupList = Prelude.map microAddrOrNop ([0 .. 0xFF] :: [Data])
   where
     microAddrOrNop opcode = findMicroOPOr opcode nopAddress
 
     nopAddress = findMicroOPOr 0xEA (errorX "NOP instruction not found in microcode")
+
+    findMicroOPOr :: Data -> MicroOPRomAddress -> MicroOPRomAddress
+    findMicroOPOr opcode ifNotFound = case Prelude.filter (\(op, _, _) -> op == opcode) linkedMicrocode of
+      [] -> ifNotFound
+      ((_, addr, _) : _) -> addr

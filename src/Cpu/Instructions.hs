@@ -213,7 +213,7 @@ decode op = case op of
   $(bitPattern "01.01100") -> (JMP, jumpAddressing)
   $(bitPattern "...10000") -> (BRANCH branch, undefinedAddressingMode)
   -- Store register register to memory.
-  $(bitPattern "010...01") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just Memory} False, aluAddressing)
+  $(bitPattern "100...01") -> (Compute ID ALUConnect {_left = Nothing, _right = RegA, _output = Just Memory} False, aluAddressing)
   $(bitPattern "100.0100") -> (Compute ID ALUConnect {_left = Nothing, _right = RegY, _output = Just Memory} False, storeAddressing XRegOffset)
   $(bitPattern "100.0110") -> (Compute ID ALUConnect {_left = Nothing, _right = RegX, _output = Just Memory} False, storeAddressing YRegOffset)
   $(bitPattern "10001100") -> (Compute ID ALUConnect {_left = Nothing, _right = RegY, _output = Just Memory} False, storeAddressing XRegOffset)

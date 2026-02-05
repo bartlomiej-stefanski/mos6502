@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "CpuTest.hpp"
+#include "Instructions.hpp"
 
 CpuTest::MemoryLayer::MemoryLayer(const std::string name, std::vector< MemoryOccupant >&& data)
   : std::vector< u8 >(), name(name)
@@ -31,6 +32,15 @@ CpuTest::MemoryLayer::MemoryLayer(const std::string name, std::vector< MemoryOcc
 CpuTest::MemoryLayer::MemoryLayer(const std::string name, std::vector< u8 >&& data)
   : std::vector< u8 >(data), name(name)
 {
+}
+
+CpuTest::MemoryLayer::MemoryLayer(const std::string name, std::vector< Instruction >&& data)
+  : std::vector< u8 >(), name(name)
+{
+  for (auto& instr: data) {
+    const auto bytes{instr.to_bytes()};
+    this->insert(this->end(), bytes.begin(), bytes.end());
+  }
 }
 
 void CpuTest::SetUpMemory()
@@ -106,6 +116,16 @@ void CpuTest::tick()
     .sp = cpu->SP
   };
 
+  prev_flags = {
+    .carry = cpu->CARRY_AF,
+    .zero = cpu->ZERO_AF,
+    .interrupt_disable = cpu->INT_F,
+    .decimal_mode = cpu->DEC_AF,
+    .break_command = cpu->BRK_F,
+    .overflow = cpu->OVF_AF,
+    .negative = cpu->NEG_AF
+  };
+
   cpu->CLK = 0;
   cpu->eval();
 
@@ -150,6 +170,29 @@ void CpuTest::expect_regs_change(RegsState expected)
   CHECK_IF_CHANGE_EXPECTED(x, REG_X)
   CHECK_IF_CHANGE_EXPECTED(y, REG_Y)
   CHECK_IF_CHANGE_EXPECTED(sp, SP)
+
+#undef CHECK_IF_CHANGE_EXPECTED
+}
+
+void CpuTest::expect_flags_change(CpuFlagState expected)
+{
+  SCOPED_TRACE("EXPECT_FLAGS_CHANGE");
+
+#define CHECK_IF_CHANGE_EXPECTED(field, cpu_flag) \
+  if (expected.field.has_value()) { \
+    EXPECT_EQ(cpu->cpu_flag, *expected.field); \
+  } \
+  else { \
+    EXPECT_EQ(cpu->cpu_flag, *prev_flags.field); \
+  }
+
+  CHECK_IF_CHANGE_EXPECTED(carry, CARRY_AF);
+  CHECK_IF_CHANGE_EXPECTED(zero, ZERO_AF);
+  CHECK_IF_CHANGE_EXPECTED(interrupt_disable, INT_F);
+  CHECK_IF_CHANGE_EXPECTED(decimal_mode, DEC_AF);
+  CHECK_IF_CHANGE_EXPECTED(break_command, BRK_F);
+  CHECK_IF_CHANGE_EXPECTED(overflow, OVF_AF);
+  CHECK_IF_CHANGE_EXPECTED(negative, NEG_AF);
 
 #undef CHECK_IF_CHANGE_EXPECTED
 }

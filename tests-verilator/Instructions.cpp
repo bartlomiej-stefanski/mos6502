@@ -12,10 +12,10 @@ Instruction Instruction::nop()
   return nop;
 }
 
-Instruction Instruction::lda_immediate(u8 immediate)
+Instruction Instruction::immediate(ImmediateOpcodes opcode, u8 immediate)
 {
   Instruction lda;
-  lda.data.emplace_back(0xA9);
+  lda.data.emplace_back((u8)opcode);
   lda.data.emplace_back(immediate);
   return lda;
 }

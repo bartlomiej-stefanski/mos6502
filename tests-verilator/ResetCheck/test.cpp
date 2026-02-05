@@ -27,10 +27,10 @@ protected:
       program_start,
       MemoryLayer(
         "Program Memory",
-        {
-          MO(Instruction::nop()),
-          MO(Instruction::nop()),
-          MO(Instruction::nop())
+        std::vector< Instruction >{
+          Instruction::nop(),
+          Instruction::nop(),
+          Instruction::nop()
         }
       )
     });

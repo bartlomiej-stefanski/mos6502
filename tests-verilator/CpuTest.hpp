@@ -30,6 +30,7 @@ protected:
   {
     MemoryLayer(const std::string name, std::vector< MemoryOccupant >&& data);
     MemoryLayer(const std::string name, std::vector< u8 >&& data);
+    MemoryLayer(const std::string name, std::vector< Instruction >&& data);
 
     std::string name;
   };

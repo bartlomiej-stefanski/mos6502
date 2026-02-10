@@ -67,7 +67,7 @@ protected:
   { \
     SCOPED_TRACE("Taking Branching"); \
     expect_regs_change({.pc = NEXT_PC}); \
-    ASSERT_EQ(cpu->MEM_ADDR, program_a); \
+    expect_bus_read(program_a); \
   } \
   tick(2); \
   { \
@@ -91,7 +91,7 @@ protected:
   { \
     SCOPED_TRACE("Taking Branching"); \
     expect_regs_change({.pc = NEXT_PC}); \
-    ASSERT_EQ(cpu->MEM_ADDR, program_b); \
+    expect_bus_read(program_b); \
   } \
   tick(2); \
   { \
@@ -115,7 +115,7 @@ protected:
   { \
     SCOPED_TRACE("Skip Branching"); \
     expect_regs_change({.pc = NEXT_PC}); \
-    ASSERT_EQ(cpu->MEM_ADDR, program_start + 4); \
+    expect_bus_read(program_start + 4); \
   } \
   tick(2); \
   { \

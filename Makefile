@@ -6,7 +6,8 @@ VERILOG_TEST_SUITES = \
 	ResetCheck \
 	ImmediateInstructions \
 	InnerStateInstructions \
-	BranchInstructions
+	BranchInstructions \
+	ZeroPageInstructions
 
 SOURCEDIR := $(abspath tests-verilator)
 VERILOG_SOURCEDIR := $(abspath verilog/DebugTopLevel.topEntity)

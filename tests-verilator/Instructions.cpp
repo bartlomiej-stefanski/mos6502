@@ -35,6 +35,14 @@ Instruction Instruction::branch(BranchOpcodes opcode, i8 offset)
   return branch;
 }
 
+Instruction Instruction::zero_page(ZeroPageOpcodes opcode, u8 offset)
+{
+  Instruction ins;
+  ins.data.emplace_back((u8)opcode);
+  ins.data.emplace_back(offset);
+  return ins;
+}
+
 Instruction Instruction::jumpAbsolute(Addr address)
 {
   Instruction jpm;

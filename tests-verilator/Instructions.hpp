@@ -57,6 +57,38 @@ enum class BranchOpcodes : u8
   BEQ = 0xF0,
 };
 
+enum class ZeroPageOpcodes : u8
+{
+  BIT = 0x24,
+
+  STY = 0x84,
+  STX = 0x86,
+  STA = 0x85,
+
+  LDY = 0xA4,
+  LDX = 0xA6,
+  LDA = 0xA5,
+
+  CPY = 0xC4,
+  CPX = 0xE4,
+  CMP = 0xC5,
+
+  ORA = 0x05,
+  AND = 0x25,
+  EOR = 0x45,
+
+  ADC = 0x65,
+  SBC = 0xE5,
+
+  INC = 0xE6,
+  DEC = 0xC6,
+
+  ASL = 0x06,
+  LSR = 0x46,
+  ROL = 0x26,
+  ROR = 0x66,
+};
+
 class Instruction
 {
   Instruction() = default;
@@ -69,6 +101,7 @@ public:
   static Instruction immediate(ImmediateOpcodes opcode, u8 immediate);
   static Instruction inner(InnerStateOpcodes opcode);
   static Instruction branch(BranchOpcodes opcode, i8 offset);
+  static Instruction zero_page(ZeroPageOpcodes opcode, u8 offset);
   static Instruction jumpAbsolute(Addr address);
   static Instruction jumpIndirect(Addr address);
 

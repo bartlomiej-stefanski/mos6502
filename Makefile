@@ -4,7 +4,8 @@ VERILATOR = verilator
 VERILOG_TEST_SUITES = \
 	SanityCheck \
 	ResetCheck \
-	ImmediateInstructions
+	ImmediateInstructions \
+	InnerStateInstructions
 
 SOURCEDIR := $(abspath tests-verilator)
 VERILOG_SOURCEDIR := $(abspath verilog/DebugTopLevel.topEntity)

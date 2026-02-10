@@ -19,3 +19,10 @@ Instruction Instruction::immediate(ImmediateOpcodes opcode, u8 immediate)
   lda.data.emplace_back(immediate);
   return lda;
 }
+
+Instruction Instruction::inner(InnerStateOpcodes opcode)
+{
+  Instruction ins;
+  ins.data.emplace_back((u8)opcode);
+  return ins;
+}

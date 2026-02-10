@@ -129,7 +129,7 @@ microcodeGenerator (instruction, addressingMode) =
           -- Load the low-byte of the address, requested address will be latched on bus.
           placeDataOnBus DATA_LATCH_AND_BUS NONE,
           -- Load the high-byte of the address, requested address will be latched on bus.
-          placeDataOnBus LAST_BUS_ADDRESS_PLUS_ONE NONE,
+          placeDataOnBus LAST_BUS_ADDRESS_PLUS_ONE NONE . readFromBus DATA_READ,
           -- Now we have low-byte latched and high-byte on bus, request the actual data.
           lastMicroOP . placeDataOnBus DATA_LATCH_AND_BUS NONE
         ]
@@ -140,7 +140,7 @@ microcodeGenerator (instruction, addressingMode) =
           -- Use the value in X register as offset pre-indexing.
           placeDataOnBus DATA_LATCH_AND_BUS REGX,
           -- Load the high-byte of the address, requested address will be latched on bus.
-          placeDataOnBus LAST_BUS_ADDRESS_PLUS_ONE NONE,
+          placeDataOnBus LAST_BUS_ADDRESS_PLUS_ONE NONE . readFromBus DATA_READ,
           -- Now we have low-byte latched and high-byte on bus, request the actual data.
           lastMicroOP . placeDataOnBus DATA_LATCH_AND_BUS NONE
         ]
@@ -150,7 +150,7 @@ microcodeGenerator (instruction, addressingMode) =
           -- Load the low-byte of the addreess, requested address will be latched on bus.
           placeDataOnBus DATA_LATCH_AND_BUS NONE,
           -- Load the high-byte of the address, requested address will be latched on bus.
-          placeDataOnBus LAST_BUS_ADDRESS_PLUS_ONE NONE,
+          placeDataOnBus LAST_BUS_ADDRESS_PLUS_ONE NONE . readFromBus DATA_READ,
           -- Now we have low-byte latched and high-byte on bus, request the actual data.
           -- Use the value in Y register as offset post-indexing.
           lastMicroOP . placeDataOnBus DATA_LATCH_AND_BUS REGY

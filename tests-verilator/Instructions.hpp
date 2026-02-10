@@ -45,6 +45,18 @@ enum class InnerStateOpcodes : u8
   TSX = 0xBA,
 };
 
+enum class BranchOpcodes : u8
+{
+  BPL = 0x10,
+  BMI = 0x30,
+  BVC = 0x50,
+  BVS = 0x70,
+  BCC = 0x90,
+  BCS = 0xB0,
+  BNE = 0xD0,
+  BEQ = 0xF0,
+};
+
 class Instruction
 {
   Instruction() = default;
@@ -56,6 +68,9 @@ public:
 
   static Instruction immediate(ImmediateOpcodes opcode, u8 immediate);
   static Instruction inner(InnerStateOpcodes opcode);
+  static Instruction branch(BranchOpcodes opcode, i8 offset);
+  static Instruction jumpAbsolute(Addr address);
+  static Instruction jumpIndirect(Addr address);
 
 private:
   std::vector< u8 > data;

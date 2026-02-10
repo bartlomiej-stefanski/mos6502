@@ -26,3 +26,29 @@ Instruction Instruction::inner(InnerStateOpcodes opcode)
   ins.data.emplace_back((u8)opcode);
   return ins;
 }
+
+Instruction Instruction::branch(BranchOpcodes opcode, i8 offset)
+{
+  Instruction branch;
+  branch.data.emplace_back((u8)opcode);
+  branch.data.emplace_back((u8)offset);
+  return branch;
+}
+
+Instruction Instruction::jumpAbsolute(Addr address)
+{
+  Instruction jpm;
+  jpm.data.emplace_back(0x4C);
+  jpm.data.emplace_back((u8)(address & 0xFF));
+  jpm.data.emplace_back((u8)((address >> 8) & 0xFF));
+  return jpm;
+}
+
+Instruction Instruction::jumpIndirect(Addr address)
+{
+  Instruction jpm;
+  jpm.data.emplace_back(0x6C);
+  jpm.data.emplace_back((u8)(address & 0xFF));
+  jpm.data.emplace_back((u8)((address >> 8) & 0xFF));
+  return jpm;
+}

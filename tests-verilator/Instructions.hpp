@@ -208,6 +208,36 @@ enum class AbsoluteYOpcodes : u8
   CMP = 0xBC,
 };
 
+enum class IndirectXOpcodes : u8
+{
+  ORA = 0x01,
+  AND = 0x21,
+  EOR = 0x41,
+
+  ADC = 0x61,
+  SBC = 0xE1,
+
+  LDA = 0xA1,
+  STA = 0x81,
+
+  CMP = 0xC1,
+};
+
+enum class IndirectYOpcodes : u8
+{
+  ORA = 0x11,
+  AND = 0x31,
+  EOR = 0x51,
+
+  ADC = 0x71,
+  SBC = 0xF1,
+
+  LDA = 0xB1,
+  STA = 0x91,
+
+  CMP = 0xD1,
+};
+
 class Instruction
 {
   Instruction() = default;
@@ -227,6 +257,8 @@ public:
   static Instruction absolute(AbsoluteOpcodes opcode, Addr address);
   static Instruction absolute(AbsoluteXOpcodes opcode, Addr address);
   static Instruction absolute(AbsoluteYOpcodes opcode, Addr address);
+  static Instruction indirect(IndirectXOpcodes opcode, Addr address);
+  static Instruction indirect(IndirectYOpcodes opcode, Addr address);
 
   static Instruction jumpAbsolute(Addr address);
   static Instruction jumpIndirect(Addr address);

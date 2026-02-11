@@ -45,15 +45,7 @@ TEST_F(ImmediateInstructions, LoadRegisterTests)
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2); // LDX instruction
-
-  {
-    SCOPED_TRACE("LDA load immediate");
-    expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(program_start + 1);
-  }
-
-  tick();
+  ASSERT_EQ(cpu->PC, program_start + 3); // LDX instruction
 
   {
     SCOPED_TRACE("LDA execute");
@@ -62,8 +54,6 @@ TEST_F(ImmediateInstructions, LoadRegisterTests)
   }
 
   tick(); // Decoding
-
-  tick();
 
   {
     SCOPED_TRACE("LDX load immediate");
@@ -80,8 +70,6 @@ TEST_F(ImmediateInstructions, LoadRegisterTests)
   }
 
   tick(); // Decoding
-
-  tick();
 
   {
     SCOPED_TRACE("LDY load immediate");
@@ -119,7 +107,7 @@ TEST_F(ImmediateInstructions, AdditionTests)
   });
 
   reset_to_entry();
-  tick(3); // Execute LDA and decode next
+  tick(); // Execute LDA and decode next
   ASSERT_EQ(cpu->REG_A, lda_data);
   ASSERT_EQ(cpu->PC, program_start + 4); // Immediate of first ADC
 
@@ -140,8 +128,6 @@ TEST_F(ImmediateInstructions, AdditionTests)
 
   tick(); // Decoding
 
-  tick();
-
   {
     SCOPED_TRACE("ADC load immediate (2)");
     expect_regs_change({.pc = NEXT_PC});
@@ -160,7 +146,7 @@ TEST_F(ImmediateInstructions, AdditionTests)
 
   tick(); // Decoding
 
-  tick(2);
+  tick();
 
   {
     SCOPED_TRACE("ADC execute (3)");
@@ -190,7 +176,7 @@ TEST_F(ImmediateInstructions, SubtractionTests)
   });
 
   reset_to_entry();
-  tick(3); // Execute LDA and decode next
+  tick(); // Execute LDA and decode next
   ASSERT_EQ(cpu->REG_A, lda_data);
   ASSERT_EQ(cpu->PC, program_start + 4); // Immediate of first SBC
 
@@ -211,8 +197,6 @@ TEST_F(ImmediateInstructions, SubtractionTests)
 
   tick(); // Decoding
 
-  tick();
-
   {
     SCOPED_TRACE("SBC load immediate (2)");
     expect_regs_change({.pc = NEXT_PC});
@@ -231,7 +215,7 @@ TEST_F(ImmediateInstructions, SubtractionTests)
 
   tick(); // Decoding
 
-  tick(2);
+  tick();
 
   {
     SCOPED_TRACE("SBC execute (3)");
@@ -262,7 +246,7 @@ TEST_F(ImmediateInstructions, BinaryOpTest)
   });
 
   reset_to_entry();
-  tick(3); // Execute LDA and decode next
+  tick(); // Execute LDA and decode next
   ASSERT_EQ(cpu->REG_A, lda_data);
   ASSERT_EQ(cpu->PC, program_start + 4); // Immediate of first ORA
 
@@ -284,8 +268,6 @@ TEST_F(ImmediateInstructions, BinaryOpTest)
 
   tick(); // Decoding
 
-  tick();
-
   {
     SCOPED_TRACE("AND load immediate (2)");
     expect_regs_change({.pc = NEXT_PC});
@@ -303,8 +285,6 @@ TEST_F(ImmediateInstructions, BinaryOpTest)
   }
 
   tick(); // Decoding
-
-  tick();
 
   {
     SCOPED_TRACE("EOR load immediate (3)");
@@ -346,7 +326,7 @@ TEST_F(ImmediateInstructions, CompareInstructions)
   });
 
   reset_to_entry();
-  tick(8); // Load A, X, Y registers
+  tick(4); // Load A, X, Y registers
   ASSERT_EQ(cpu->REG_A, lda_data);
   ASSERT_EQ(cpu->REG_X, ldx_data);
   ASSERT_EQ(cpu->REG_Y, ldy_data);
@@ -372,8 +352,6 @@ TEST_F(ImmediateInstructions, CompareInstructions)
 
   tick(); // Decoding
 
-  tick();
-
   {
     SCOPED_TRACE("CPX load immediate");
     expect_regs_change({.pc = NEXT_PC});
@@ -391,8 +369,6 @@ TEST_F(ImmediateInstructions, CompareInstructions)
   }
 
   tick(); // Decoding
-
-  tick();
 
   {
     SCOPED_TRACE("CPY load immediate");

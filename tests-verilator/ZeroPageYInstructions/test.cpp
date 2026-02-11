@@ -70,7 +70,7 @@ protected:
     });
 
     reset_to_entry();
-    tick(11);
+    tick(7);
 
     {
       SCOPED_TRACE("LoadRegisters");
@@ -98,15 +98,7 @@ TEST_F(ZeroPageYInstructions, LoadRegisterTests)
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2); // LDX instruction
-
-  {
-    SCOPED_TRACE("LDX load addr");
-    expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(program_start + 1);
-  }
-
-  tick();
+  ASSERT_EQ(cpu->PC, program_start + 2); // LDX instruction, loading immediate
 
   {
     SCOPED_TRACE("LDX load zero page");

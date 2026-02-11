@@ -5,7 +5,6 @@
 #include "Common.hpp"
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
-#include "BitHelper.hpp"
 
 constexpr Addr program_start{0x8090};
 
@@ -68,14 +67,14 @@ protected:
     });
 
     reset_to_entry();
-    tick(14);
+    tick(11);
 
     {
       SCOPED_TRACE("LoadRegisters");
       ASSERT_EQ(cpu->REG_A, lda_val);
       ASSERT_EQ(cpu->REG_X, ldx_val);
       ASSERT_EQ(cpu->REG_Y, ldy_val);
-      ASSERT_EQ(cpu->PC, TestProgramStart + 1);
+      ASSERT_EQ(cpu->PC, TestProgramStart + 2);
     }
   }
 };
@@ -98,15 +97,7 @@ TEST_F(AbsoluteYInstructions, LoadRegisterTests)
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2); // LDX instruction
-
-  {
-    SCOPED_TRACE("LDA load addr low");
-    expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(program_start + 1);
-  }
-
-  tick();
+  ASSERT_EQ(cpu->PC, program_start + 3); // LDX instruction, load low addr
 
   {
     SCOPED_TRACE("LDA load addr high");
@@ -131,7 +122,6 @@ TEST_F(AbsoluteYInstructions, LoadRegisterTests)
     expect_bus_read(program_start + 3);
   }
 
-  tick(); // Decoding
   tick(4);
 
   const Addr load_y_addr = ldx_val + *prev_state.y;
@@ -158,7 +148,6 @@ TEST_F(AbsoluteYInstructions, StoreRegisterTests)
   });
 
   LoadRegisters();
-  tick();
 
   {
     SCOPED_TRACE("STA load addr low");
@@ -208,7 +197,6 @@ TEST_F(AbsoluteYInstructions, BitOpsTest)
   });
 
   LoadRegisters();
-  tick();
 
   {
     SCOPED_TRACE("ORA load addr");
@@ -222,14 +210,12 @@ TEST_F(AbsoluteYInstructions, BitOpsTest)
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a | (or_addr + *prev_state.y)});
   }
 
-  tick(); // Decode
   tick(4);
   {
     SCOPED_TRACE("AND perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a & (and_addr + *prev_state.y)});
   }
 
-  tick(); // Decode
   tick(4);
   {
     SCOPED_TRACE("EOR perform op");
@@ -255,7 +241,6 @@ TEST_F(AbsoluteYInstructions, AddSbcTest)
   });
 
   LoadRegisters();
-  tick();
 
   {
     SCOPED_TRACE("ADC load addr");
@@ -269,7 +254,6 @@ TEST_F(AbsoluteYInstructions, AddSbcTest)
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a + adc_addr + *prev_state.y});
   }
 
-  tick(); // Decode
   tick(4);
   {
     SCOPED_TRACE("SBC perform op");
@@ -294,7 +278,6 @@ TEST_F(AbsoluteYInstructions, CmpTest)
 
   LoadRegisters();
 
-  tick();
   {
     SCOPED_TRACE("CMP load addr low");
     expect_regs_change({.pc = NEXT_PC});

@@ -11,9 +11,9 @@ VERILOG_TEST_SUITES = \
 	ZeroPageXInstructions \
 	ZeroPageYInstructions \
 	AbsoluteInstructions \
-	StackInstructions \
 	AbsoluteXInstructions \
 	AbsoluteYInstructions \
+	StackInstructions \
 	IndirectXInstructions \
 	IndirectYInstructions
 

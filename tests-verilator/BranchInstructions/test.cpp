@@ -53,12 +53,6 @@ protected:
 
 #define TAKE_BRANCH_TEST() \
   { \
-    SCOPED_TRACE("Reading branch offset"); \
-    expect_regs_change({.pc = NEXT_PC}); \
-  } \
-  \
-  tick(); \
-  { \
     SCOPED_TRACE("Calculating Branch"); \
     expect_regs_change({.pc = program_a}); \
   } \
@@ -77,12 +71,6 @@ protected:
 
 #define TAKE_BACKWARD_BRANCH_TEST() \
   { \
-    SCOPED_TRACE("Reading branch offset"); \
-    expect_regs_change({.pc = NEXT_PC}); \
-  } \
-  \
-  tick(); \
-  { \
     SCOPED_TRACE("Calculating Branch"); \
     expect_regs_change({.pc = program_b}); \
   } \
@@ -100,12 +88,6 @@ protected:
   }
 
 #define SKIP_BRANCH_TEST() \
-  { \
-    SCOPED_TRACE("Reading branch offset"); \
-    expect_regs_change({.pc = NEXT_PC}); \
-  } \
-  \
-  tick(); \
   { \
     SCOPED_TRACE("Calculating Branch"); \
     expect_regs_change({}); \
@@ -134,14 +116,15 @@ TEST_F(BranchInstructions, TakeBPL)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BPL, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->NEG_AF, false); // Negative clear to take the branch.
 
@@ -164,9 +147,9 @@ TEST_F(BranchInstructions, TakeBackwardBPL)
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->NEG_AF, false); // Negative clear to take the branch.
 
@@ -184,20 +167,20 @@ TEST_F(BranchInstructions, SkipBPL)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BPL, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->NEG_AF, true); // Negative active to skip the branch.
 
   SKIP_BRANCH_TEST()
 }
-
 
 TEST_F(BranchInstructions, SkipBMI)
 {
@@ -210,14 +193,15 @@ TEST_F(BranchInstructions, SkipBMI)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BMI, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->NEG_AF, false); // Negative clear to skip the branch.
 
@@ -235,14 +219,15 @@ TEST_F(BranchInstructions, TakeBMI)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BMI, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->NEG_AF, true); // Negative active to take the branch.
 
@@ -260,14 +245,15 @@ TEST_F(BranchInstructions, TakeBackwardBMI)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BMI, program_b - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->NEG_AF, true); // Negative active to take the branch.
 
@@ -285,14 +271,15 @@ TEST_F(BranchInstructions, TakeBNE)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BNE, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->ZERO_AF, false); // Zero clear to take the branch.
 
@@ -310,14 +297,15 @@ TEST_F(BranchInstructions, SkipBNE)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BNE, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->ZERO_AF, true); // Zero active to skip the branch.
 
@@ -335,14 +323,15 @@ TEST_F(BranchInstructions, SkipBEQ)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BEQ, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->ZERO_AF, false); // Zero clear to skip the branch.
 
@@ -360,14 +349,15 @@ TEST_F(BranchInstructions, TakeBEQ)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BEQ, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->ZERO_AF, true); // Zero active to take the branch.
 
@@ -385,14 +375,15 @@ TEST_F(BranchInstructions, TakeBVC)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BVC, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->OVF_AF, false); // Overflow clear to take the branch.
 
@@ -410,14 +401,15 @@ TEST_F(BranchInstructions, SkipBVS)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BVS, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->ZERO_AF, false); // Overflow clear to skip the branch.
 
@@ -435,14 +427,15 @@ TEST_F(BranchInstructions, TakeBCC)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BCC, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->CARRY_AF, false); // Carry clear to take the branch.
 
@@ -460,14 +453,15 @@ TEST_F(BranchInstructions, SkipBCS)
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BCS, program_a - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
-  tick(3); // LDA
+  tick(2); // LDA
   ASSERT_EQ(cpu->REG_A, reg_a);
   ASSERT_EQ(cpu->CARRY_AF, false); // Carry clear to skip the branch.
 
@@ -483,16 +477,15 @@ TEST_F(BranchInstructions, JumpAbsolute)
       std::vector< Instruction >{
         Instruction::jumpAbsolute(program_a),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
   tick(); // Read second part of immediate
-
-  tick();
   {
     SCOPED_TRACE("Jump to AbsoluteValue");
     expect_regs_change({.pc = program_a + 1});
@@ -524,14 +517,13 @@ TEST_F(BranchInstructions, JumpIndirect)
       std::vector< Instruction >{
         Instruction::jumpIndirect(JumpTable),
         Instruction::inner(InnerStateOpcodes::INY),
+        Instruction::nop(),
       }
     )
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2);
-
-  tick(); // Read second part of immediate
+  ASSERT_EQ(cpu->PC, program_start + 3);
 
   tick();
   {
@@ -553,5 +545,11 @@ TEST_F(BranchInstructions, JumpIndirect)
     SCOPED_TRACE("Read second part of jump address");
     expect_regs_change({.pc = program_b + 1});
     ASSERT_EQ(cpu->MEM_ADDR, program_b);
+  }
+
+  tick(2);
+  {
+    SCOPED_TRACE("DEX after jump");
+    expect_regs_change({.pc = NEXT_PC, .x = -1});
   }
 }

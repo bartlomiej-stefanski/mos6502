@@ -71,7 +71,7 @@ protected:
     });
 
     reset_to_entry();
-    tick(11);
+    tick(7);
 
     {
       SCOPED_TRACE("LoadRegisters");
@@ -101,15 +101,7 @@ TEST_F(ZeroPageXInstructions, LoadRegisterTests)
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2); // LDX instruction
-
-  {
-    SCOPED_TRACE("LDA load addr");
-    expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(program_start + 1);
-  }
-
-  tick();
+  ASSERT_EQ(cpu->PC, program_start + 2); // LDX instruction, loading immediate
 
   {
     SCOPED_TRACE("LDA load zero page");
@@ -125,7 +117,6 @@ TEST_F(ZeroPageXInstructions, LoadRegisterTests)
     expect_bus_read(program_start + 2);
   }
 
-  tick(); // Decoding
   tick(3);
 
   {
@@ -175,7 +166,6 @@ TEST_F(ZeroPageXInstructions, StoreRegisterTests)
     expect_bus_read(TestProgramStart + 2);
   }
 
-  tick(); // Decoding
   tick(3);
   {
     SCOPED_TRACE("STA");
@@ -219,14 +209,12 @@ TEST_F(ZeroPageXInstructions, BitOpsTest)
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a | (or_addr - *prev_state.x)});
   }
 
-  tick(); // Decode
   tick(3);
   {
     SCOPED_TRACE("AND perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a & (and_addr - *prev_state.x)});
   }
 
-  tick(); // Decode
   tick(3);
   {
     SCOPED_TRACE("EOR perform op");
@@ -266,7 +254,6 @@ TEST_F(ZeroPageXInstructions, AddSbcTest)
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a + (adc_addr - *prev_state.x)});
   }
 
-  tick(); // Decode
   tick(3);
   {
     SCOPED_TRACE("SBC perform op");
@@ -312,7 +299,6 @@ TEST_F(ZeroPageXInstructions, IncDecTest)
     expect_bus_write(256 - inc_val, inc_val + 1);
   }
 
-  tick(); // Get next opcode
   tick(); // Decode
 
   tick(3);
@@ -365,7 +351,6 @@ TEST_F(ZeroPageXInstructions, ShiftOpTest)
     expect_bus_write(256 - asl_val, asl_val << 1);
   }
 
-  tick(); // Get next opcode
   tick(); // Decode
 
   tick(3);
@@ -374,7 +359,6 @@ TEST_F(ZeroPageXInstructions, ShiftOpTest)
     expect_bus_write(256 - (lsr_addr - *prev_state.x), (lsr_addr - *prev_state.x) >> 1);
   }
 
-  tick(); // Get next opcode
   tick(); // Decode
 
   tick(3);
@@ -383,7 +367,6 @@ TEST_F(ZeroPageXInstructions, ShiftOpTest)
     expect_bus_write(256 - (rol_addr - *prev_state.x), rol(rol_addr - *prev_state.x));
   }
 
-  tick(); // Get next opcode
   tick(); // Decode
 
   tick(3);

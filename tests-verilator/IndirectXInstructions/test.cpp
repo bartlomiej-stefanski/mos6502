@@ -80,14 +80,14 @@ protected:
     });
 
     reset_to_entry();
-    tick(14);
+    tick(11);
 
     {
       SCOPED_TRACE("LoadRegisters");
       ASSERT_EQ(cpu->REG_A, lda_val);
       ASSERT_EQ(cpu->REG_X, ldx_val);
       ASSERT_EQ(cpu->REG_Y, ldy_val);
-      ASSERT_EQ(cpu->PC, TestProgramStart + 1);
+      ASSERT_EQ(cpu->PC, TestProgramStart + 2);
     }
   }
 };
@@ -108,15 +108,8 @@ TEST_F(IndirectXInstructions, LoadRegisterTests)
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2); // LDX instruction
+  ASSERT_EQ(cpu->PC, program_start + 3); // LDX instruction, load indirect low
 
-  {
-    SCOPED_TRACE("LDA load indirect-addr low");
-    expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(program_start + 1);
-  }
-
-  tick();
   {
     SCOPED_TRACE("LDA load indirect-addr high");
     expect_regs_change({.pc = NEXT_PC});
@@ -166,7 +159,6 @@ TEST_F(IndirectXInstructions, StoreRegisterTests)
   });
 
   LoadRegisters();
-  tick();
 
   {
     SCOPED_TRACE("STA load indirect-addr low");
@@ -226,7 +218,6 @@ TEST_F(IndirectXInstructions, BitOpsTest)
   });
 
   LoadRegisters();
-  tick();
 
   {
     SCOPED_TRACE("ORA load addr");
@@ -240,14 +231,12 @@ TEST_F(IndirectXInstructions, BitOpsTest)
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a | (*prev_state.x / 2)});
   }
 
-  tick(); // Decode
   tick(6);
   {
     SCOPED_TRACE("AND perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a & (*prev_state.x / 2)});
   }
 
-  tick(); // Decode
   tick(6);
   {
     SCOPED_TRACE("EOR perform op");
@@ -270,7 +259,6 @@ TEST_F(IndirectXInstructions, AddSbcTest)
   });
 
   LoadRegisters();
-  tick();
 
   {
     SCOPED_TRACE("ADC load addr");
@@ -284,7 +272,6 @@ TEST_F(IndirectXInstructions, AddSbcTest)
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a + (*prev_state.x / 2)});
   }
 
-  tick(); // Decode
   tick(6);
   {
     SCOPED_TRACE("SBC perform op");
@@ -307,7 +294,6 @@ TEST_F(IndirectXInstructions, CmpTest)
 
   LoadRegisters();
 
-  tick();
   {
     SCOPED_TRACE("CMP load addr low");
     expect_regs_change({.pc = NEXT_PC});

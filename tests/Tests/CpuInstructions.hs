@@ -9,6 +9,7 @@ import Cpu.Cpu
 import Cpu.CpuState
 import Cpu.Data
 import Cpu.Instructions
+import Cpu.Microcode.Gen
 import Cpu.Microcode.Map
 import qualified Hedgehog as H
 import Test.Tasty
@@ -22,7 +23,7 @@ prop_reset_works = H.property $ do
 
   let (pcHigh, pcLow) = splitAddr resetPC
 
-  let op1 : op2 : op3 : _ = microcodeInstructions (JMP, Absolute None)
+  let op1 : op2 : op3 : _ = resetMicroOps
 
   let (syncState, _) = cpuWithBus initCpuStateWithBus (0, op1)
 

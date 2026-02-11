@@ -3,12 +3,16 @@ module Cpu.Microcode.Data where
 import Clash.Prelude
 import Cpu.Data
 
+-- | Decode opcode on bus to uncover next MicroOP.
+-- This is the last instruction in a chain.
+data MicroOPSource
+  = MicroOpcodeBus
+  | MicroOpcodeLatch
+  deriving (Eq, Show, Generic, NFDataX, Lift)
+
 data MicroCmd
   = -- | Execute actual instruction.
     CmdExecute
-  | -- | Decode opcode on bus to uncover next MicroOP.
-    -- This is the last instruction in a chain.
-    CmdDecodeOpcode
   | -- | Do not perform operations.
     CmdNOP
   deriving (Eq, Show, Generic, NFDataX, Lift)
@@ -57,6 +61,7 @@ data SPChange = SPIncrement | SPDecrement | SPNone
 data MicroOP
   = MicroOP
   { _cmd :: MicroCmd,
+    _opcodeDecode :: Maybe MicroOPSource,
     _busOp :: BusOP,
     _incrementPC :: Bool,
     _spOperation :: SPChange
@@ -75,6 +80,7 @@ nopMicroOP :: MicroOP
 nopMicroOP =
   MicroOP
     { _cmd = CmdNOP,
+      _opcodeDecode = Nothing,
       _busOp = nopBusOP,
       _incrementPC = False,
       _spOperation = SPNone

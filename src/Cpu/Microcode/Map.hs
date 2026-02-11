@@ -11,7 +11,6 @@ import qualified Prelude
 microcodeInstructions :: (Instruction, AddressingMode) -> [MicroOP]
 microcodeInstructions instr =
   Prelude.map (\f -> f nopMicroOP) (microcodeGenerator instr)
-    Prelude.++ [nopMicroOP {_cmd = CmdDecodeOpcode}]
 
 {- ORMOLU_DISABLE -}
 opcodeList :: [Data]
@@ -39,7 +38,7 @@ microInstructionList :: [(Data, [MicroOP])]
 microInstructionList = Prelude.map (\opcode -> (opcode, microcodeInstructions $ decode opcode)) opcodeList
 
 linkMicrocode :: [(Data, [MicroOP])] -> [LinkedMicrocode]
-linkMicrocode microcodeList = snd $ Data.List.mapAccumL calcAddress (0 :: MicroOPRomAddress) microcodeList
+linkMicrocode microcodeList = snd $ Data.List.mapAccumL calcAddress startOffset microcodeList
   where
     calcAddress :: MicroOPRomAddress -> (Data, [MicroOP]) -> (MicroOPRomAddress, LinkedMicrocode)
     calcAddress acc curr = (acc + currLen, (fst curr, acc, microOps))
@@ -47,11 +46,16 @@ linkMicrocode microcodeList = snd $ Data.List.mapAccumL calcAddress (0 :: MicroO
         microOps = snd curr
         currLen = fromIntegral $ Prelude.length microOps :: MicroOPRomAddress
 
+    startOffset = fromIntegral $ Prelude.length resetMicroOps :: MicroOPRomAddress
+
 linkedMicrocode :: [LinkedMicrocode]
 linkedMicrocode = linkMicrocode microInstructionList
 
 rawMicrocodeList :: [MicroOP]
-rawMicrocodeList = Prelude.concatMap (\(_, _, ops) -> ops) linkedMicrocode
+rawMicrocodeList = resetMicroOps Prelude.++ (Prelude.concatMap (\(_, _, ops) -> ops) linkedMicrocode)
+
+resetMicroOPIndex :: MicroOPRomAddress
+resetMicroOPIndex = 0
 
 addrLookupList :: [MicroOPRomAddress]
 addrLookupList = Prelude.map microAddrOrNop ([0 .. 0xFF] :: [Data])

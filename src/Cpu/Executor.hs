@@ -125,15 +125,17 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
   where
     microOP = _microOP inputData
     cmd = _cmd microOP
+    microOPCmd = _opcodeDecode microOP
 
     dataOnBus = _busData inputData
+    dataLatched = _dataLatch cpuState
     (regPCH, regPCL) = splitAddr $ _regPC cpuState
 
     busOP = _busOp microOP
     readData = _readData busOP
     latchBusData cpuS = cpuS {_dataLatch = dataOnBus}
     applyReadData cpuS = case readData of
-      Just DATA_READ_PC -> latchBusData cpuS {_regPC = bitCoerce (dataOnBus, _dataLatch cpuState)}
+      Just DATA_READ_PC -> latchBusData cpuS {_regPC = bitCoerce (dataOnBus, dataLatched)}
       Just DATA_READ_STATUS -> latchBusData cpuS {_cpuFlags = cpuFlagsFromData dataOnBus}
       Just DATA_READ -> latchBusData cpuS
       Nothing -> cpuS
@@ -158,7 +160,7 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
           SP_INC -> spOffset .|. zeroExtend (_regSP cpuState + 1)
           PC -> _regPC cpuState
           BUS_VALUE -> zeroExtend dataOnBus
-          DATA_LATCH_AND_BUS -> bitCoerce (dataOnBus, _dataLatch cpuState)
+          DATA_LATCH_AND_BUS -> bitCoerce (dataOnBus, dataLatched)
           LAST_BUS_ADDRESS -> _lastBusAddress inputData
           LAST_BUS_ADDRESS_PLUS_ONE -> _lastBusAddress inputData + 1
 
@@ -187,17 +189,17 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
           _nextMicroOp = Nothing
         }
 
-    outputData = case cmd of
-      CmdExecute -> baseOutputData
-      CmdDecodeOpcode -> setNextMicroOp baseOutputData
-      CmdNOP -> baseOutputData
+    setNextMicroOp opcode oData = oData {_nextMicroOp = Just (opcodeMapperRom !! opcode)}
+    setNextInstruction cpuS = case microOPCmd of
+      Nothing -> cpuS
+      Just MicroOpcodeBus -> cpuS {_instruction = fst $ decode dataOnBus}
+      Just MicroOpcodeLatch -> cpuS {_instruction = fst $ decode dataLatched}
 
-    (nextInstruction, _) = decode dataOnBus
-    nextMicroOpIndex = opcodeMapperRom !! dataOnBus
-    setNextMicroOp oData = oData {_nextMicroOp = Just nextMicroOpIndex}
-    setNextInstruction cpuS = cpuS {_instruction = nextInstruction}
+    outputData = case microOPCmd of
+      Nothing -> baseOutputData
+      Just MicroOpcodeBus -> setNextMicroOp dataOnBus baseOutputData
+      Just MicroOpcodeLatch -> setNextMicroOp dataLatched baseOutputData
 
     outCpuState = applySpChange . applyPcChange . applyReadData $ case cmd of
-      CmdExecute -> postExecCpuState
-      CmdDecodeOpcode -> setNextInstruction cpuState
-      CmdNOP -> cpuState
+      CmdExecute -> setNextInstruction postExecCpuState
+      CmdNOP -> setNextInstruction cpuState

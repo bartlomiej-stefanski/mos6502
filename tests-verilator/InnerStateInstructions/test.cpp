@@ -45,14 +45,15 @@ protected:
   void LoadRegisters()
   {
     reset_to_entry();
-    tick(8); // Load A, X, Y registers.
+    tick(5); // Load A, X, Y registers.
 
     {
       SCOPED_TRACE("Registers loaded");
       ASSERT_EQ(cpu->REG_A, lda_data);
       ASSERT_EQ(cpu->REG_X, ldx_data);
       ASSERT_EQ(cpu->REG_Y, ldy_data);
-      ASSERT_EQ(cpu->PC, program_start + 1); // Read and decoded first instruction.
+      ASSERT_EQ(cpu->PC, program_start + 2); // Read and decoded first instruction.
+      ASSERT_EQ(cpu->MEM_ADDR, program_start + 1);
     }
   }
 };
@@ -66,22 +67,25 @@ TEST_F(InnerStateInstructions, CarryFlagOperations)
       std::vector< Instruction >{
         Instruction::inner(InnerStateOpcodes::SEC),
         Instruction::inner(InnerStateOpcodes::CLC),
+        Instruction::nop(),
       }
     )
   });
 
   LoadRegisters();
 
-  tick(1);
+  tick();
   {
     SCOPED_TRACE("SEC");
     expect_flags_change({.carry = true});
+    expect_bus_read(program_start + 2);
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("CLC");
     expect_flags_change({.carry = false});
+    expect_bus_read(program_start + 3);
   }
 }
 
@@ -94,19 +98,20 @@ TEST_F(InnerStateInstructions, InterruptFlagOperations)
       std::vector< Instruction >{
         Instruction::inner(InnerStateOpcodes::SEI),
         Instruction::inner(InnerStateOpcodes::CLI),
+        Instruction::nop(),
       }
     )
   });
 
   LoadRegisters();
 
-  tick(1);
+  tick();
   {
     SCOPED_TRACE("SEI");
     expect_flags_change({.interrupt_disable = true});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("CLI");
     expect_flags_change({.interrupt_disable = false});
@@ -122,19 +127,20 @@ TEST_F(InnerStateInstructions, DecimalFlagOperations)
       std::vector< Instruction >{
         Instruction::inner(InnerStateOpcodes::SED),
         Instruction::inner(InnerStateOpcodes::CLD),
+        Instruction::nop(),
       }
     )
   });
 
   LoadRegisters();
 
-  tick(1);
+  tick();
   {
     SCOPED_TRACE("SED");
     expect_flags_change({.decimal_mode = true});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("CLD");
     expect_flags_change({.decimal_mode = false});
@@ -150,6 +156,7 @@ TEST_F(InnerStateInstructions, OverflowFlagOperations)
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::ADC, lda_add),
         Instruction::inner(InnerStateOpcodes::CLV),
+        Instruction::nop(),
       }
     )
   });
@@ -163,7 +170,7 @@ TEST_F(InnerStateInstructions, OverflowFlagOperations)
     expect_flags_change({.overflow = true, .negative = true});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("CLV");
     expect_flags_change({.overflow = false});
@@ -181,31 +188,32 @@ TEST_F(InnerStateInstructions, IncrementOperators)
         Instruction::inner(InnerStateOpcodes::INX),
         Instruction::inner(InnerStateOpcodes::DEY),
         Instruction::inner(InnerStateOpcodes::DEX),
+        Instruction::nop(),
       }
     )
   });
 
   LoadRegisters();
 
-  tick(1);
+  tick();
   {
     SCOPED_TRACE("INY");
     expect_regs_change({.pc = NEXT_PC, .y = *prev_state.y + 1});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("INX");
     expect_regs_change({.pc = NEXT_PC, .x = *prev_state.x + 1});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("DEY");
     expect_regs_change({.pc = NEXT_PC, .y = *prev_state.y - 1});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("DEX");
     expect_regs_change({.pc = NEXT_PC, .x = *prev_state.x - 1});
@@ -225,43 +233,44 @@ TEST_F(InnerStateInstructions, TransferOperators)
         Instruction::inner(InnerStateOpcodes::TSX),
         Instruction::inner(InnerStateOpcodes::TXA),
         Instruction::inner(InnerStateOpcodes::TAY),
+        Instruction::nop(),
       }
     )
   });
 
   LoadRegisters();
 
-  tick(1);
+  tick();
   {
     SCOPED_TRACE("TYA");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.y});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("TXS");
     expect_regs_change({.pc = NEXT_PC, .sp = *prev_state.x});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("TAX");
     expect_regs_change({.pc = NEXT_PC, .x = *prev_state.a});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("TSX");
     expect_regs_change({.pc = NEXT_PC, .x = *prev_state.sp});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("TXA");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.x});
   }
 
-  tick(2); // Decode and execute
+  tick(); // Decode and execute
   {
     SCOPED_TRACE("TAY");
     expect_regs_change({.pc = NEXT_PC, .y = *prev_state.a});

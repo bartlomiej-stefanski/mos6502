@@ -68,14 +68,14 @@ protected:
     });
 
     reset_to_entry();
-    tick(14);
+    tick(11);
 
     {
       SCOPED_TRACE("LoadRegisters");
       ASSERT_EQ(cpu->REG_A, lda_val);
       ASSERT_EQ(cpu->REG_X, ldx_val);
       ASSERT_EQ(cpu->REG_Y, ldy_val);
-      ASSERT_EQ(cpu->PC, TestProgramStart + 1);
+      ASSERT_EQ(cpu->PC, TestProgramStart + 2);
     }
   }
 };
@@ -100,15 +100,7 @@ TEST_F(AbsoluteInstructions, LoadRegisterTests)
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 2); // LDX instruction
-
-  {
-    SCOPED_TRACE("LDA load addr low");
-    expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(program_start + 1);
-  }
-
-  tick();
+  ASSERT_EQ(cpu->PC, program_start + 3); // LDX instruction, load low addr
 
   {
     SCOPED_TRACE("LDA load addr high");
@@ -132,7 +124,6 @@ TEST_F(AbsoluteInstructions, LoadRegisterTests)
     expect_bus_read(program_start + 3);
   }
 
-  tick(); // Decoding
   tick(4);
 
   {
@@ -141,7 +132,6 @@ TEST_F(AbsoluteInstructions, LoadRegisterTests)
     expect_bus_read(program_start + 6);
   }
 
-  tick(); // Decoding
   tick(4);
 
   {
@@ -171,7 +161,6 @@ TEST_F(AbsoluteInstructions, StoreRegisterTests)
   });
 
   LoadRegisters();
-  tick();
 
   {
     SCOPED_TRACE("STX load addr low");
@@ -200,7 +189,6 @@ TEST_F(AbsoluteInstructions, StoreRegisterTests)
     expect_bus_read(TestProgramStart + 3);
   }
 
-  tick(); // Decoding
   tick(4);
   {
     SCOPED_TRACE("STY");
@@ -209,7 +197,6 @@ TEST_F(AbsoluteInstructions, StoreRegisterTests)
     EXPECT_EQ(get_memory(sty_addr, false), cpu->REG_Y);
   }
 
-  tick(); // Decoding
   tick(4);
   {
     SCOPED_TRACE("STA");
@@ -237,7 +224,6 @@ TEST_F(AbsoluteInstructions, BitTest)
   });
 
   LoadRegisters();
-  tick();
 
   {
     SCOPED_TRACE("BIT load low addr");
@@ -255,7 +241,6 @@ TEST_F(AbsoluteInstructions, BitTest)
     });
   }
 
-  tick(); // Decode
   tick(4);
   {
     SCOPED_TRACE("BIT2 read value");
@@ -287,7 +272,6 @@ TEST_F(AbsoluteInstructions, BitOpsTest)
   });
 
   LoadRegisters();
-  tick();
 
   {
     SCOPED_TRACE("ORA load addr");
@@ -301,14 +285,12 @@ TEST_F(AbsoluteInstructions, BitOpsTest)
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a | or_addr});
   }
 
-  tick(); // Decode
   tick(4);
   {
     SCOPED_TRACE("AND perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a & and_addr});
   }
 
-  tick(); // Decode
   tick(4);
   {
     SCOPED_TRACE("EOR perform op");
@@ -334,7 +316,6 @@ TEST_F(AbsoluteInstructions, AddSbcTest)
   });
 
   LoadRegisters();
-  tick();
 
   {
     SCOPED_TRACE("ADC load addr");
@@ -348,7 +329,6 @@ TEST_F(AbsoluteInstructions, AddSbcTest)
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a + adc_addr});
   }
 
-  tick(); // Decode
   tick(4);
   {
     SCOPED_TRACE("SBC perform op");
@@ -375,7 +355,6 @@ TEST_F(AbsoluteInstructions, IncDecTest)
 
   LoadRegisters();
 
-  tick();
   {
     SCOPED_TRACE("INC load addr low");
     expect_regs_change({.pc = NEXT_PC});
@@ -401,7 +380,6 @@ TEST_F(AbsoluteInstructions, IncDecTest)
     expect_bus_write(inc_addr, (inc_addr & 0xFF) + 1);
   }
 
-  tick(); // Get next opcode
   tick(); // Decode
 
   tick(4);
@@ -434,7 +412,6 @@ TEST_F(AbsoluteInstructions, ShiftOpTest)
 
   LoadRegisters();
 
-  tick();
   {
     SCOPED_TRACE("ASL load addr low");
     expect_regs_change({.pc = NEXT_PC});
@@ -460,7 +437,6 @@ TEST_F(AbsoluteInstructions, ShiftOpTest)
     expect_bus_write(asl_addr, (asl_addr << 1) & 0xFF);
   }
 
-  tick(); // Get next opcode
   tick(); // Decode
 
   tick(4);
@@ -469,7 +445,6 @@ TEST_F(AbsoluteInstructions, ShiftOpTest)
     expect_bus_write(lsr_addr, (lsr_addr >> 1) & 0xFF);
   }
 
-  tick(); // Get next opcode
   tick(); // Decode
 
   tick(4);
@@ -478,7 +453,6 @@ TEST_F(AbsoluteInstructions, ShiftOpTest)
     expect_bus_write(rol_addr, rol(rol_addr & 0xFF));
   }
 
-  tick(); // Get next opcode
   tick(); // Decode
 
   tick(4);
@@ -509,7 +483,6 @@ TEST_F(AbsoluteInstructions, CmpTest)
 
   LoadRegisters();
 
-  tick();
   {
     SCOPED_TRACE("CMP load addr low");
     expect_regs_change({.pc = NEXT_PC});
@@ -531,7 +504,6 @@ TEST_F(AbsoluteInstructions, CmpTest)
     });
   }
 
-  tick(); // Decode
   tick(4);
   {
     SCOPED_TRACE("CPX read value");
@@ -541,7 +513,6 @@ TEST_F(AbsoluteInstructions, CmpTest)
     });
   }
 
-  tick(); // Decode
   tick(4);
   {
     SCOPED_TRACE("CPY read value");

@@ -93,16 +93,16 @@ TEST_F(ResetCheckTests, InitialOperationsAreCorrect)
 
   {
     SCOPED_TRACE("Decode NOP opcode");
-    expect_regs_change({.pc = program_start + 1});
-    expect_bus_read(program_start);
+    expect_regs_change({.pc = program_start + 2});
+    expect_bus_read(program_start + 1); // Pre-fetch next opcode
   }
 
   tick();
 
   {
     SCOPED_TRACE("Execute NOP: just ask for next opcode");
-    expect_regs_change({.pc = program_start + 2});
-    expect_bus_read(program_start + 1);
+    expect_regs_change({.pc = program_start + 3});
+    expect_bus_read(program_start + 2);
   }
 }
 
@@ -110,7 +110,7 @@ TEST_F(ResetCheckTests, ResetBringsBackInitialState)
 {
   reset();
 
-  tick(5);
+  tick(4);
 
   EXPECT_EQ(cpu->PC, program_start + 2);
 

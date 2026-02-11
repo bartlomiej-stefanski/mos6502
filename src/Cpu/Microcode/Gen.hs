@@ -44,6 +44,10 @@ microOPIncrementPC microOP = microOP {_incrementPC = True}
 microOPChangeSP :: SPChange -> MicroOP -> MicroOP
 microOPChangeSP spChange microOP = microOP {_spOperation = spChange}
 
+decodeAndFetchPC :: MicroOPSource -> MicroOP -> MicroOP
+decodeAndFetchPC nextMicroOPSource microOp =
+  microOPIncrementPC . placeDataOnBus PC NONE $ microOp {_opcodeDecode = Just nextMicroOPSource}
+
 -- | Given an instruction and addressing mode generates a list of micro-operations.
 -- These micro-operations are encoded as 'transformers' for NOP microOP.
 -- Generator omits a final 'CmdDecodeOpcode' microOP necessary to fetch next instruction
@@ -51,47 +55,63 @@ microOPChangeSP spChange microOP = microOP {_spOperation = spChange}
 microcodeGenerator :: (Instruction, AddressingMode) -> [MicroOP -> MicroOP]
 microcodeGenerator (instruction, addressingMode) =
   case (instruction, addressingMode) of
-    (NOP, _) -> [placeNextOpcodeOnBus]
-    (PHP, _) -> [pushToStack DATA_WRITE_STATUS, placeNextOpcodeOnBus]
-    (PLP, _) -> [popFromStack, readFromBus DATA_READ_STATUS, placeNextOpcodeOnBus]
-    (SEC, _) -> [executeCmd . placeNextOpcodeOnBus]
-    (CLC, _) -> [executeCmd . placeNextOpcodeOnBus]
-    (SED, _) -> [executeCmd . placeNextOpcodeOnBus]
-    (CLD, _) -> [executeCmd . placeNextOpcodeOnBus]
-    (CLV, _) -> [executeCmd . placeNextOpcodeOnBus]
-    (SEI, _) -> [executeCmd . placeNextOpcodeOnBus]
-    (CLI, _) -> [executeCmd . placeNextOpcodeOnBus]
+    (NOP, _) -> [decodeAndFetchPC MicroOpcodeBus]
+    (PHP, _) -> [pushToStack DATA_WRITE_STATUS . readFromBus DATA_READ, decodeAndFetchPC MicroOpcodeBus]
+    (PLP, _) -> [popFromStack . readFromBus DATA_READ, readFromBus DATA_READ_STATUS, decodeAndFetchPC MicroOpcodeBus]
+    (SEC, _) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]
+    (CLC, _) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]
+    (SED, _) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]
+    (CLD, _) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]
+    (CLV, _) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]
+    (SEI, _) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]
+    (CLI, _) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]
     -- Note that JSR saves 'nextPC - 1' onto stack by design! RTS will add the missing 1.
     (JSR, _) ->
-      [ placeImmediatOnBus,
+      [ -- placeImmediatOnBus, -- Performed during decode.
         -- Currently PCLow is on bus, latch it for later.
         pushToStack DATA_WRITE_PC_HIGH . readFromBus DATA_READ,
         pushToStack DATA_WRITE_PC_LOW,
         placeImmediatOnBus,
         -- At this point PCHigh is on bus, and PCLow is still latched.
         -- Set PC = (PCHigh, PCLow) and fetch next opcode.
-        microOPIncrementPC . readFromBus DATA_READ_PC . placeDataOnBus DATA_LATCH_AND_BUS NONE
+        microOPIncrementPC . readFromBus DATA_READ_PC . placeDataOnBus DATA_LATCH_AND_BUS NONE,
+        decodeAndFetchPC MicroOpcodeBus
       ]
     (RTS, _) ->
       [ popFromStack,
         popFromStack . readFromBus DATA_READ,
         -- Increment PC one time to get next instruction.
         microOPIncrementPC . readFromBus DATA_READ_PC,
-        placeNextOpcodeOnBus
+        placeNextOpcodeOnBus,
+        decodeAndFetchPC MicroOpcodeBus
       ]
     -- BRK instruction not implemented!
-    (BRK, _) -> [placeNextOpcodeOnBus]
+    (BRK, _) -> [decodeAndFetchPC MicroOpcodeBus]
     -- RTI instruction not implemented!
-    (RTI, _) -> [placeNextOpcodeOnBus]
-    (JMP, _) -> loadToBus (microOPIncrementPC . readFromBus DATA_READ_PC)
+    (RTI, _) -> [decodeAndFetchPC MicroOpcodeBus]
+    (JMP, _) -> loadToBus (microOPIncrementPC . readFromBus DATA_READ_PC) Prelude.++ [decodeAndFetchPC MicroOpcodeBus]
     -- TODO: Fetch next opcode on the same cycle the branch is taken.
-    (BRANCH _, _) -> [placeImmediatOnBus, executeCmd, placeNextOpcodeOnBus]
+    (BRANCH _, _) -> [executeCmd, placeNextOpcodeOnBus, decodeAndFetchPC MicroOpcodeBus]
+    (Compute _ (ALUConnect _ _ output) _, StackPointer) ->
+      case storesToMemory of
+        False -> loadStackToBus id Prelude.++ [executeCmd . decodeAndFetchPC MicroOpcodeLatch]
+        True -> loadStackToBus (writeAluResult . executeCmd) Prelude.++ [decodeAndFetchPC MicroOpcodeLatch]
+      where
+        storesToMemory = output == Just Memory
+        loadStackToBus :: (MicroOP -> MicroOP) -> [MicroOP -> MicroOP]
+        loadStackToBus lastMicroOP =
+          [ \microOP ->
+              let op = lastMicroOP microOP
+               in case _writeData $ _busOp op of
+                    Nothing -> popFromStack $ readFromBus DATA_READ op
+                    Just writeData -> pushToStack writeData $ readFromBus DATA_READ op
+          ]
     (Compute _ (ALUConnect left right output) _, _) ->
       case (usesLoadedData, storesToMemory) of
-        (False, False) -> [executeCmd . placeNextOpcodeOnBus]
-        (True, False) -> loadToBus id Prelude.++ [executeCmd . placeNextOpcodeOnBus]
-        (False, True) -> loadToBus (writeAluResult . executeCmd) Prelude.++ [placeNextOpcodeOnBus]
-        (True, True) -> loadToBus id Prelude.++ [writeToBus LAST_BUS_ADDRESS NONE DATA_WRITE_ALU . executeCmd, placeNextOpcodeOnBus]
+        (False, False) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]
+        (True, False) -> loadToBus id Prelude.++ [executeCmd . placeNextOpcodeOnBus, decodeAndFetchPC MicroOpcodeBus]
+        (False, True) -> loadToBus (writeAluResult . executeCmd) Prelude.++ [placeNextOpcodeOnBus, decodeAndFetchPC MicroOpcodeBus]
+        (True, True) -> loadToBus id Prelude.++ [writeToBus LAST_BUS_ADDRESS NONE DATA_WRITE_ALU . executeCmd, placeNextOpcodeOnBus, decodeAndFetchPC MicroOpcodeBus]
       where
         usesLoadedData = case (left, right) of
           (Just Memory, _) -> True
@@ -113,18 +133,18 @@ microcodeGenerator (instruction, addressingMode) =
     -- end with the requested address present on the bus.
     loadToBus :: (MicroOP -> MicroOP) -> [MicroOP -> MicroOP]
     loadToBus lastMicroOP = case addressingMode of
-      Immediate -> [placeImmediatOnBus]
+      Immediate -> []
       Absolute offset ->
-        [ placeImmediatOnBus,
+        [ -- placeImmediatOnBus,
           placeImmediatOnBus . readFromBus DATA_READ,
           lastMicroOP . placeDataOnBus DATA_LATCH_AND_BUS (addressOffsetToBusAddressOffset offset)
         ]
       ZeroPage offset ->
-        [ placeImmediatOnBus,
+        [ -- placeImmediatOnBus,
           lastMicroOP . placeDataOnBus BUS_VALUE (addressOffsetToBusAddressOffset offset)
         ]
       Indirect None ->
-        [ placeImmediatOnBus,
+        [ -- placeImmediatOnBus,
           placeImmediatOnBus . readFromBus DATA_READ,
           -- Load the low-byte of the address, requested address will be latched on bus.
           placeDataOnBus DATA_LATCH_AND_BUS NONE,
@@ -134,7 +154,7 @@ microcodeGenerator (instruction, addressingMode) =
           lastMicroOP . placeDataOnBus DATA_LATCH_AND_BUS NONE
         ]
       Indirect XRegOffset ->
-        [ placeImmediatOnBus,
+        [ -- placeImmediatOnBus,
           placeImmediatOnBus . readFromBus DATA_READ,
           -- Load the low-byte of the addreess, requested address will be latched on bus.
           -- Use the value in X register as offset pre-indexing.
@@ -145,7 +165,7 @@ microcodeGenerator (instruction, addressingMode) =
           lastMicroOP . placeDataOnBus DATA_LATCH_AND_BUS NONE
         ]
       Indirect YRegOffset ->
-        [ placeImmediatOnBus,
+        [ -- placeImmediatOnBus,
           placeImmediatOnBus . readFromBus DATA_READ,
           -- Load the low-byte of the addreess, requested address will be latched on bus.
           placeDataOnBus DATA_LATCH_AND_BUS NONE,
@@ -155,10 +175,12 @@ microcodeGenerator (instruction, addressingMode) =
           -- Use the value in Y register as offset post-indexing.
           lastMicroOP . placeDataOnBus DATA_LATCH_AND_BUS REGY
         ]
-      StackPointer ->
-        [ \microOP ->
-            let op = lastMicroOP microOP
-             in case _writeData $ _busOp op of
-                  Nothing -> popFromStack op
-                  Just writeData -> pushToStack writeData op
-        ]
+      StackPointer -> errorX "StackPointer addressing handled as a special case"
+
+resetMicroOps :: [MicroOP]
+resetMicroOps =
+  [ microOPIncrementPC . placeDataOnBus PC NONE $ nopMicroOP,
+    microOPIncrementPC . placeDataOnBus PC NONE . readFromBus DATA_READ $ nopMicroOP,
+    microOPIncrementPC . readFromBus DATA_READ_PC . placeDataOnBus DATA_LATCH_AND_BUS NONE $ nopMicroOP,
+    decodeAndFetchPC MicroOpcodeBus $ nopMicroOP
+  ]

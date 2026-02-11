@@ -12,6 +12,13 @@ Instruction Instruction::nop()
   return nop;
 }
 
+Instruction Instruction::stack(StackOpcodes opcode)
+{
+  Instruction ins;
+  ins.data.emplace_back((u8)opcode);
+  return ins;
+}
+
 Instruction Instruction::immediate(ImmediateOpcodes opcode, u8 immediate)
 {
   Instruction lda;
@@ -65,6 +72,15 @@ Instruction Instruction::jumpIndirect(Addr address)
 {
   Instruction jpm;
   jpm.data.emplace_back(0x6C);
+  jpm.data.emplace_back((u8)(address & 0xFF));
+  jpm.data.emplace_back((u8)((address >> 8) & 0xFF));
+  return jpm;
+}
+
+Instruction Instruction::jumpSoubroutine(Addr address)
+{
+  Instruction jpm;
+  jpm.data.emplace_back(0x20);
   jpm.data.emplace_back((u8)(address & 0xFF));
   jpm.data.emplace_back((u8)((address >> 8) & 0xFF));
   return jpm;

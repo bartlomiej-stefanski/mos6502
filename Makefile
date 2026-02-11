@@ -8,7 +8,8 @@ VERILOG_TEST_SUITES = \
 	InnerStateInstructions \
 	BranchInstructions \
 	ZeroPageInstructions \
-	AbsoluteInstructions
+	AbsoluteInstructions \
+	StackInstructions
 
 SOURCEDIR := $(abspath tests-verilator)
 VERILOG_SOURCEDIR := $(abspath verilog/DebugTopLevel.topEntity)

@@ -4,6 +4,19 @@
 
 #include "Common.hpp"
 
+enum class StackOpcodes : u8
+{
+  BRK = 0x00,
+  RTI = 0x40,
+
+  RTS = 0x60,
+
+  PHP = 0x08,
+  PLP = 0x28,
+  PHA = 0x48,
+  PLA = 0x68,
+};
+
 enum class ImmediateOpcodes : u8
 {
   LDA = 0xA9,
@@ -130,13 +143,16 @@ public:
 
   static Instruction nop();
 
+  static Instruction stack(StackOpcodes opcode);
   static Instruction immediate(ImmediateOpcodes opcode, u8 immediate);
   static Instruction inner(InnerStateOpcodes opcode);
   static Instruction branch(BranchOpcodes opcode, i8 offset);
   static Instruction zero_page(ZeroPageOpcodes opcode, u8 offset);
   static Instruction absolute(AbsoluteOpcodes opcode, Addr address);
+
   static Instruction jumpAbsolute(Addr address);
   static Instruction jumpIndirect(Addr address);
+  static Instruction jumpSoubroutine(Addr address);
 
 private:
   std::vector< u8 > data;

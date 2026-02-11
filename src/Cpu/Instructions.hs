@@ -271,8 +271,7 @@ decode op = case op of
     shiftOp = ShiftOp . decodeShiftOp $ slice d6 d5 op
 
     incDecOp = if testBit op 5 then ADD else SUB
-    incDecAddressing = decodeIncDecAddressing incDecMemTarget $ slice d4 d3 op
-    incDecMemTarget = if testBit op 1 then YRegOffset else XRegOffset
+    incDecAddressing = decodeIncDecAddressing XRegOffset $ slice d4 d3 op
 
     loadTarget = Just if testBit op 1 then RegX else RegY
     loadAddressing = decodeLoadAddressing $ slice d3 d2 op

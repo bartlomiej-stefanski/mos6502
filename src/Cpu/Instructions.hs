@@ -143,7 +143,7 @@ decodeAluOp = \case
   0b001 -> BinaryOp AND
   0b010 -> BinaryOp XOR
   0b011 -> ADC
-  0b100 -> ID -- Should never be used! Cannot be undefined due to rom creation.
+  0b100 -> errorX "Undefined ALU operation bits"
   0b101 -> ID
   0b110 -> CMP
   0b111 -> SBC
@@ -189,7 +189,7 @@ decodeLoadAddressing :: BitVector 2 -> AddressingMode
 decodeLoadAddressing = \case
   0b00 -> Immediate
   0b01 -> ZeroPage None
-  0b10 -> Immediate -- Should never be used! Cannot be undefined due to rom creation.
+  0b10 -> errorX "Undefined addressing bits for LD instruction"
   0b11 -> Absolute None
   _ -> errorX "Impossible: loadAddressing"
 
@@ -275,7 +275,7 @@ decode op = case op of
     incDecMemTarget = if testBit op 1 then YRegOffset else XRegOffset
 
     loadTarget = Just if testBit op 1 then RegX else RegY
-    loadAddressing = decodeLoadAddressing $ slice d4 d3 op
+    loadAddressing = decodeLoadAddressing $ slice d3 d2 op
 
 jmpAbsoluteOpcode :: Data
 jmpAbsoluteOpcode = 0x4C

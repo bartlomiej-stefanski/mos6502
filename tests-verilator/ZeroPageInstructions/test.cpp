@@ -27,7 +27,7 @@ protected:
     std::vector< u8 > zero_page_data;
     zero_page_data.reserve(0x100);
     for (u16 i = 1; i < 0x100; ++i)
-      zero_page_data.push_back(i & 0xFF);
+      zero_page_data.push_back((256 - i) & 0xFF);
 
     memory_maps.insert({
       0x1,
@@ -50,15 +50,15 @@ protected:
       MemoryLayer(
         "Program Memory",
         std::vector< Instruction >{
-          Instruction::zero_page(ZeroPageOpcodes::LDA, lda_addr),
-          Instruction::zero_page(ZeroPageOpcodes::LDX, ldx_addr),
-          Instruction::zero_page(ZeroPageOpcodes::LDY, ldy_addr),
+          Instruction::zero_page(ZeroPageOpcodes::LDA, 256 - lda_addr),
+          Instruction::zero_page(ZeroPageOpcodes::LDX, 256 - ldx_addr),
+          Instruction::zero_page(ZeroPageOpcodes::LDY, 256 - ldy_addr),
         }
       )
     });
 
     reset_to_entry();
-    tick(9);
+    tick(11);
 
     {
       SCOPED_TRACE("LoadRegisters");
@@ -81,9 +81,9 @@ TEST_F(ZeroPageInstructions, LoadRegisterTests)
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::LDA, lda_addr),
-        Instruction::zero_page(ZeroPageOpcodes::LDX, ldx_addr),
-        Instruction::zero_page(ZeroPageOpcodes::LDY, ldy_addr),
+        Instruction::zero_page(ZeroPageOpcodes::LDA, 256 - lda_addr),
+        Instruction::zero_page(ZeroPageOpcodes::LDX, 256 - ldx_addr),
+        Instruction::zero_page(ZeroPageOpcodes::LDY, 256 - ldy_addr),
         Instruction::nop()
       }
     )
@@ -103,7 +103,7 @@ TEST_F(ZeroPageInstructions, LoadRegisterTests)
   {
     SCOPED_TRACE("LDA load zero page");
     expect_regs_change({});
-    expect_bus_read(lda_addr);
+    expect_bus_read(256 - lda_addr);
   }
 
   tick();
@@ -115,7 +115,7 @@ TEST_F(ZeroPageInstructions, LoadRegisterTests)
   }
 
   tick(); // Decoding
-  tick(2);
+  tick(3);
 
   {
     SCOPED_TRACE("LDX load value to register");
@@ -124,7 +124,7 @@ TEST_F(ZeroPageInstructions, LoadRegisterTests)
   }
 
   tick(); // Decoding
-  tick(2);
+  tick(3);
 
   {
     SCOPED_TRACE("LDY load value to register");
@@ -204,8 +204,8 @@ TEST_F(ZeroPageInstructions, BitTest)
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::BIT, bit1_addr),
-        Instruction::zero_page(ZeroPageOpcodes::BIT, bit2_addr),
+        Instruction::zero_page(ZeroPageOpcodes::BIT, 256 - bit1_addr),
+        Instruction::zero_page(ZeroPageOpcodes::BIT, 256 - bit2_addr),
         Instruction::nop()
       }
     )
@@ -253,9 +253,9 @@ TEST_F(ZeroPageInstructions, BitOpsTest)
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::ORA, or_addr),
-        Instruction::zero_page(ZeroPageOpcodes::AND, and_addr),
-        Instruction::zero_page(ZeroPageOpcodes::EOR, xor_addr),
+        Instruction::zero_page(ZeroPageOpcodes::ORA, 256 - or_addr),
+        Instruction::zero_page(ZeroPageOpcodes::AND, 256 - and_addr),
+        Instruction::zero_page(ZeroPageOpcodes::EOR, 256 - xor_addr),
         Instruction::nop()
       }
     )
@@ -301,8 +301,8 @@ TEST_F(ZeroPageInstructions, AddSbcTest)
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::ADC, adc_addr),
-        Instruction::zero_page(ZeroPageOpcodes::SBC, sbc_addr),
+        Instruction::zero_page(ZeroPageOpcodes::ADC, 256 - adc_addr),
+        Instruction::zero_page(ZeroPageOpcodes::SBC, 256 - sbc_addr),
         Instruction::nop()
       }
     )
@@ -341,8 +341,8 @@ TEST_F(ZeroPageInstructions, IncDecTest)
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::INC, inc_addr),
-        Instruction::zero_page(ZeroPageOpcodes::DEC, dec_addr),
+        Instruction::zero_page(ZeroPageOpcodes::INC, 256 - inc_addr),
+        Instruction::zero_page(ZeroPageOpcodes::DEC, 256 - dec_addr),
         Instruction::nop()
       }
     )
@@ -366,7 +366,7 @@ TEST_F(ZeroPageInstructions, IncDecTest)
   tick();
   {
     SCOPED_TRACE("ADC write data");
-    expect_bus_write(inc_addr, inc_addr + 1);
+    expect_bus_write(256 - inc_addr, inc_addr + 1);
   }
 
   tick(); // Get next opcode
@@ -375,7 +375,7 @@ TEST_F(ZeroPageInstructions, IncDecTest)
   tick(3);
   {
     SCOPED_TRACE("SBC perform op");
-    expect_bus_write(dec_addr, dec_addr - 1);
+    expect_bus_write(256 - dec_addr, dec_addr - 1);
   }
 }
 
@@ -391,10 +391,10 @@ TEST_F(ZeroPageInstructions, ShiftOpTest)
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::ASL, asl_addr),
-        Instruction::zero_page(ZeroPageOpcodes::LSR, lsr_addr),
-        Instruction::zero_page(ZeroPageOpcodes::ROL, rol_addr),
-        Instruction::zero_page(ZeroPageOpcodes::ROR, ror_addr),
+        Instruction::zero_page(ZeroPageOpcodes::ASL, 256 - asl_addr),
+        Instruction::zero_page(ZeroPageOpcodes::LSR, 256 - lsr_addr),
+        Instruction::zero_page(ZeroPageOpcodes::ROL, 256 - rol_addr),
+        Instruction::zero_page(ZeroPageOpcodes::ROR, 256 - ror_addr),
         Instruction::nop()
       }
     )
@@ -412,13 +412,13 @@ TEST_F(ZeroPageInstructions, ShiftOpTest)
   tick();
   {
     SCOPED_TRACE("ASL read data");
-    expect_bus_read(asl_addr);
+    expect_bus_read(256 - asl_addr);
   }
 
   tick();
   {
     SCOPED_TRACE("ASL write data");
-    expect_bus_write(asl_addr, asl_addr << 1);
+    expect_bus_write(256 - asl_addr, asl_addr << 1);
   }
 
   tick(); // Get next opcode
@@ -427,7 +427,7 @@ TEST_F(ZeroPageInstructions, ShiftOpTest)
   tick(3);
   {
     SCOPED_TRACE("LSR perform op");
-    expect_bus_write(lsr_addr, lsr_addr >> 1);
+    expect_bus_write(256 - lsr_addr, lsr_addr >> 1);
   }
 
   tick(); // Get next opcode
@@ -436,7 +436,7 @@ TEST_F(ZeroPageInstructions, ShiftOpTest)
   tick(3);
   {
     SCOPED_TRACE("ROL perform op");
-    expect_bus_write(rol_addr, rol(rol_addr));
+    expect_bus_write(256 - rol_addr, rol(rol_addr));
   }
 
   tick(); // Get next opcode
@@ -445,7 +445,7 @@ TEST_F(ZeroPageInstructions, ShiftOpTest)
   tick(3);
   {
     SCOPED_TRACE("ROR perform op");
-    expect_bus_write(ror_addr, ror(ror_addr));
+    expect_bus_write(256 - ror_addr, ror(ror_addr));
   }
 }
 
@@ -460,9 +460,9 @@ TEST_F(ZeroPageInstructions, CmpTest)
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::CMP, cmp_addr),
-        Instruction::zero_page(ZeroPageOpcodes::CPX, cpx_addr),
-        Instruction::zero_page(ZeroPageOpcodes::CPY, cpy_addr),
+        Instruction::zero_page(ZeroPageOpcodes::CMP, 256 - cmp_addr),
+        Instruction::zero_page(ZeroPageOpcodes::CPX, 256 - cpx_addr),
+        Instruction::zero_page(ZeroPageOpcodes::CPY, 256 - cpy_addr),
         Instruction::nop()
       }
     )

@@ -9,9 +9,11 @@
 
 constexpr Addr program_start{0x8090};
 
-class ZeroPageInstructions : public CpuTest
+class AbsoluteInstructions : public CpuTest
 {
 protected:
+  inline static constexpr Addr MemoryPage{0xa000};
+  inline static constexpr Addr RamAddr{0x2000};
   void SetUpMemory() override
   {
     CpuTest::SetUpMemory();
@@ -24,66 +26,74 @@ protected:
       )
     });
 
-    std::vector< u8 > zero_page_data;
-    zero_page_data.reserve(0x100);
-    for (u16 i = 1; i < 0x100; ++i)
-      zero_page_data.push_back((256 - i) & 0xFF);
+    std::vector< u8 > romData;
+    romData.reserve(0x100);
+    for (u16 i = 0; i < 0x100; ++i)
+      romData.push_back(i & 0xFF);
 
     memory_maps.insert({
-      0x1,
+      MemoryPage,
       MemoryLayer(
         "Zero Page",
-        std::move(zero_page_data)
+        std::move(romData)
+      )
+    });
+
+    memory_maps.insert({
+      RamAddr,
+      MemoryLayer(
+        "RAM",
+        std::vector< u8 >(512)
       )
     });
   }
 
-  inline static constexpr Addr TestProgramStart{program_start + 6};
+  inline static constexpr Addr TestProgramStart{program_start + 9};
   void LoadRegisters()
   {
-    constexpr u8 lda_addr{0xC2};
-    constexpr u8 ldx_addr{0x21};
-    constexpr u8 ldy_addr{0x37};
+    constexpr u8 lda_val{0xC2};
+    constexpr u8 ldx_val{0x21};
+    constexpr u8 ldy_val{0x37};
 
     memory_maps.insert({
       program_start,
       MemoryLayer(
         "Program Memory",
         std::vector< Instruction >{
-          Instruction::zero_page(ZeroPageOpcodes::LDA, 256 - lda_addr),
-          Instruction::zero_page(ZeroPageOpcodes::LDX, 256 - ldx_addr),
-          Instruction::zero_page(ZeroPageOpcodes::LDY, 256 - ldy_addr),
+          Instruction::absolute(AbsoluteOpcodes::LDA, MemoryPage + lda_val),
+          Instruction::absolute(AbsoluteOpcodes::LDX, MemoryPage + ldx_val),
+          Instruction::absolute(AbsoluteOpcodes::LDY, MemoryPage + ldy_val),
         }
       )
     });
 
     reset_to_entry();
-    tick(11);
+    tick(14);
 
     {
       SCOPED_TRACE("LoadRegisters");
-      ASSERT_EQ(cpu->REG_A, lda_addr);
-      ASSERT_EQ(cpu->REG_X, ldx_addr);
-      ASSERT_EQ(cpu->REG_Y, ldy_addr);
+      ASSERT_EQ(cpu->REG_A, lda_val);
+      ASSERT_EQ(cpu->REG_X, ldx_val);
+      ASSERT_EQ(cpu->REG_Y, ldy_val);
       ASSERT_EQ(cpu->PC, TestProgramStart + 1);
     }
   }
 };
 
-TEST_F(ZeroPageInstructions, LoadRegisterTests)
+TEST_F(AbsoluteInstructions, LoadRegisterTests)
 {
-  constexpr u8 lda_addr{0x42};
-  constexpr u8 ldx_addr{0x21};
-  constexpr u8 ldy_addr{0x37};
+  constexpr u8 lda_val{0x42};
+  constexpr u8 ldx_val{0x21};
+  constexpr u8 ldy_val{0x37};
 
   memory_maps.insert({
     program_start,
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::LDA, 256 - lda_addr),
-        Instruction::zero_page(ZeroPageOpcodes::LDX, 256 - ldx_addr),
-        Instruction::zero_page(ZeroPageOpcodes::LDY, 256 - ldy_addr),
+        Instruction::absolute(AbsoluteOpcodes::LDA, MemoryPage + lda_val),
+        Instruction::absolute(AbsoluteOpcodes::LDX, MemoryPage + ldx_val),
+        Instruction::absolute(AbsoluteOpcodes::LDY, MemoryPage + ldy_val),
         Instruction::nop()
       }
     )
@@ -93,7 +103,7 @@ TEST_F(ZeroPageInstructions, LoadRegisterTests)
   ASSERT_EQ(cpu->PC, program_start + 2); // LDX instruction
 
   {
-    SCOPED_TRACE("LDA load addr");
+    SCOPED_TRACE("LDA load addr low");
     expect_regs_change({.pc = NEXT_PC});
     expect_bus_read(program_start + 1);
   }
@@ -101,52 +111,60 @@ TEST_F(ZeroPageInstructions, LoadRegisterTests)
   tick();
 
   {
-    SCOPED_TRACE("LDA load zero page");
+    SCOPED_TRACE("LDA load addr high");
+    expect_regs_change({.pc = NEXT_PC});
+    expect_bus_read(program_start + 2);
+  }
+
+  tick();
+
+  {
+    SCOPED_TRACE("LDA load from addr");
     expect_regs_change({});
-    expect_bus_read(256 - lda_addr);
+    expect_bus_read(MemoryPage + lda_val);
   }
 
   tick();
 
   {
     SCOPED_TRACE("LDA load value to register");
-    expect_regs_change({.pc = NEXT_PC, .a = lda_addr});
-    expect_bus_read(program_start + 2);
+    expect_regs_change({.pc = NEXT_PC, .a = lda_val});
+    expect_bus_read(program_start + 3);
   }
 
   tick(); // Decoding
-  tick(3);
+  tick(4);
 
   {
     SCOPED_TRACE("LDX load value to register");
-    expect_regs_change({.pc = NEXT_PC, .x = ldx_addr});
-    expect_bus_read(program_start + 4);
+    expect_regs_change({.pc = NEXT_PC, .x = ldx_val});
+    expect_bus_read(program_start + 6);
   }
 
   tick(); // Decoding
-  tick(3);
+  tick(4);
 
   {
     SCOPED_TRACE("LDY load value to register");
-    expect_regs_change({.pc = NEXT_PC, .y = ldy_addr});
-    expect_bus_read(program_start + 6);
+    expect_regs_change({.pc = NEXT_PC, .y = ldy_val});
+    expect_bus_read(program_start + 9);
   }
 }
 
-TEST_F(ZeroPageInstructions, StoreRegisterTests)
+TEST_F(AbsoluteInstructions, StoreRegisterTests)
 {
-  constexpr u8 sta_addr{0x72};
-  constexpr u8 stx_addr{0x71};
-  constexpr u8 sty_addr{0x77};
+  constexpr Addr sta_addr{RamAddr + 0x72};
+  constexpr Addr stx_addr{RamAddr + 0x71};
+  constexpr Addr sty_addr{RamAddr + 0x77};
 
   memory_maps.insert({
     TestProgramStart,
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::STX, stx_addr),
-        Instruction::zero_page(ZeroPageOpcodes::STY, sty_addr),
-        Instruction::zero_page(ZeroPageOpcodes::STA, sta_addr),
+        Instruction::absolute(AbsoluteOpcodes::STX, stx_addr),
+        Instruction::absolute(AbsoluteOpcodes::STY, sty_addr),
+        Instruction::absolute(AbsoluteOpcodes::STA, sta_addr),
         Instruction::nop()
       }
     )
@@ -156,9 +174,16 @@ TEST_F(ZeroPageInstructions, StoreRegisterTests)
   tick();
 
   {
-    SCOPED_TRACE("STX load addr");
+    SCOPED_TRACE("STX load addr low");
     expect_regs_change({.pc = NEXT_PC});
     expect_bus_read(TestProgramStart + 1);
+  }
+
+  tick();
+  {
+    SCOPED_TRACE("STX load addr high");
+    expect_regs_change({.pc = NEXT_PC});
+    expect_bus_read(TestProgramStart + 2);
   }
 
   tick();
@@ -172,40 +197,40 @@ TEST_F(ZeroPageInstructions, StoreRegisterTests)
   {
     SCOPED_TRACE("STX read next opcode");
     expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(TestProgramStart + 2);
+    expect_bus_read(TestProgramStart + 3);
   }
 
   tick(); // Decoding
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("STY");
     expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(TestProgramStart + 4);
+    expect_bus_read(TestProgramStart + 6);
     EXPECT_EQ(get_memory(sty_addr, false), cpu->REG_Y);
   }
 
   tick(); // Decoding
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("STA");
     expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(TestProgramStart + 6);
+    expect_bus_read(TestProgramStart + 9);
     EXPECT_EQ(get_memory(sta_addr, false), cpu->REG_A);
   }
 }
 
-TEST_F(ZeroPageInstructions, BitTest)
+TEST_F(AbsoluteInstructions, BitTest)
 {
-  constexpr u8 bit1_addr{0x80};
-  constexpr u8 bit2_addr{0x3f};
+  constexpr Addr bit1_addr{MemoryPage + 0x80};
+  constexpr Addr bit2_addr{MemoryPage + 0x3f};
 
   memory_maps.insert({
     TestProgramStart,
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::BIT, 256 - bit1_addr),
-        Instruction::zero_page(ZeroPageOpcodes::BIT, 256 - bit2_addr),
+        Instruction::absolute(AbsoluteOpcodes::BIT, bit1_addr),
+        Instruction::absolute(AbsoluteOpcodes::BIT, bit2_addr),
         Instruction::nop()
       }
     )
@@ -215,12 +240,12 @@ TEST_F(ZeroPageInstructions, BitTest)
   tick();
 
   {
-    SCOPED_TRACE("BIT load addr");
+    SCOPED_TRACE("BIT load low addr");
     expect_regs_change({.pc = NEXT_PC});
     expect_bus_read(TestProgramStart + 1);
   }
 
-  tick(2);
+  tick(3);
   {
     SCOPED_TRACE("BIT1 read value");
     expect_flags_change({
@@ -231,7 +256,7 @@ TEST_F(ZeroPageInstructions, BitTest)
   }
 
   tick(); // Decode
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("BIT2 read value");
     expect_flags_change({
@@ -242,20 +267,20 @@ TEST_F(ZeroPageInstructions, BitTest)
   }
 }
 
-TEST_F(ZeroPageInstructions, BitOpsTest)
+TEST_F(AbsoluteInstructions, BitOpsTest)
 {
-  constexpr u8 or_addr{0x80};
-  constexpr u8 and_addr{0x3f};
-  constexpr u8 xor_addr{0x3f};
+  constexpr Addr or_addr{MemoryPage + 0x80};
+  constexpr Addr and_addr{MemoryPage + 0x3f};
+  constexpr Addr xor_addr{MemoryPage + 0x3f};
 
   memory_maps.insert({
     TestProgramStart,
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::ORA, 256 - or_addr),
-        Instruction::zero_page(ZeroPageOpcodes::AND, 256 - and_addr),
-        Instruction::zero_page(ZeroPageOpcodes::EOR, 256 - xor_addr),
+        Instruction::absolute(AbsoluteOpcodes::ORA, or_addr),
+        Instruction::absolute(AbsoluteOpcodes::AND, and_addr),
+        Instruction::absolute(AbsoluteOpcodes::EOR, xor_addr),
         Instruction::nop()
       }
     )
@@ -270,39 +295,39 @@ TEST_F(ZeroPageInstructions, BitOpsTest)
     expect_bus_read(TestProgramStart + 1);
   }
 
-  tick(2);
+  tick(3);
   {
     SCOPED_TRACE("ORA perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a | or_addr});
   }
 
   tick(); // Decode
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("AND perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a & and_addr});
   }
 
   tick(); // Decode
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("EOR perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a ^ xor_addr});
   }
 }
 
-TEST_F(ZeroPageInstructions, AddSbcTest)
+TEST_F(AbsoluteInstructions, AddSbcTest)
 {
-  constexpr u8 adc_addr{0x80};
-  constexpr u8 sbc_addr{0x3f};
+  constexpr Addr adc_addr{MemoryPage + 0x80};
+  constexpr Addr sbc_addr{MemoryPage + 0x3f};
 
   memory_maps.insert({
     TestProgramStart,
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::ADC, 256 - adc_addr),
-        Instruction::zero_page(ZeroPageOpcodes::SBC, 256 - sbc_addr),
+        Instruction::absolute(AbsoluteOpcodes::ADC, adc_addr),
+        Instruction::absolute(AbsoluteOpcodes::SBC, sbc_addr),
         Instruction::nop()
       }
     )
@@ -317,44 +342,51 @@ TEST_F(ZeroPageInstructions, AddSbcTest)
     expect_bus_read(TestProgramStart + 1);
   }
 
-  tick(2);
+  tick(3);
   {
     SCOPED_TRACE("ADC perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a + adc_addr});
   }
 
   tick(); // Decode
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("SBC perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a - sbc_addr - !*prev_flags.carry});
   }
 }
 
-TEST_F(ZeroPageInstructions, IncDecTest)
+TEST_F(AbsoluteInstructions, IncDecTest)
 {
-  constexpr u8 inc_addr{0x80};
-  constexpr u8 dec_addr{0x3f};
+  constexpr Addr inc_addr{MemoryPage + 0x80};
+  constexpr Addr dec_addr{MemoryPage + 0x3f};
 
   memory_maps.insert({
     TestProgramStart,
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::INC, 256 - inc_addr),
-        Instruction::zero_page(ZeroPageOpcodes::DEC, 256 - dec_addr),
+        Instruction::absolute(AbsoluteOpcodes::INC, inc_addr),
+        Instruction::absolute(AbsoluteOpcodes::DEC, dec_addr),
         Instruction::nop()
       }
     )
   });
 
   LoadRegisters();
-  tick();
 
+  tick();
   {
-    SCOPED_TRACE("ADC load addr");
+    SCOPED_TRACE("ADC load addr low");
     expect_regs_change({.pc = NEXT_PC});
     expect_bus_read(TestProgramStart + 1);
+  }
+
+  tick();
+  {
+    SCOPED_TRACE("ADC load addr high");
+    expect_regs_change({.pc = NEXT_PC});
+    expect_bus_read(TestProgramStart + 2);
   }
 
   tick();
@@ -366,115 +398,129 @@ TEST_F(ZeroPageInstructions, IncDecTest)
   tick();
   {
     SCOPED_TRACE("ADC write data");
-    expect_bus_write(256 - inc_addr, inc_addr + 1);
+    expect_bus_write(inc_addr, (inc_addr & 0xFF) + 1);
   }
 
   tick(); // Get next opcode
   tick(); // Decode
 
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("SBC perform op");
-    expect_bus_write(256 - dec_addr, dec_addr - 1);
+    expect_bus_write(dec_addr, (dec_addr & 0xFF) - 1);
   }
 }
 
-TEST_F(ZeroPageInstructions, ShiftOpTest)
+TEST_F(AbsoluteInstructions, ShiftOpTest)
 {
-  constexpr u8 asl_addr{0x6b};
-  constexpr u8 lsr_addr{0x3f};
-  constexpr u8 rol_addr{0x80};
-  constexpr u8 ror_addr{0x7f};
+  constexpr Addr asl_addr{MemoryPage + 0x6b};
+  constexpr Addr lsr_addr{MemoryPage + 0x3f};
+  constexpr Addr rol_addr{MemoryPage + 0x80};
+  constexpr Addr ror_addr{MemoryPage + 0x7f};
 
   memory_maps.insert({
     TestProgramStart,
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::ASL, 256 - asl_addr),
-        Instruction::zero_page(ZeroPageOpcodes::LSR, 256 - lsr_addr),
-        Instruction::zero_page(ZeroPageOpcodes::ROL, 256 - rol_addr),
-        Instruction::zero_page(ZeroPageOpcodes::ROR, 256 - ror_addr),
+        Instruction::absolute(AbsoluteOpcodes::ASL, asl_addr),
+        Instruction::absolute(AbsoluteOpcodes::LSR, lsr_addr),
+        Instruction::absolute(AbsoluteOpcodes::ROL, rol_addr),
+        Instruction::absolute(AbsoluteOpcodes::ROR, ror_addr),
         Instruction::nop()
       }
     )
   });
 
   LoadRegisters();
-  tick();
 
+  tick();
   {
-    SCOPED_TRACE("ASL load addr");
+    SCOPED_TRACE("ASL load addr low");
     expect_regs_change({.pc = NEXT_PC});
     expect_bus_read(TestProgramStart + 1);
+  }
+
+  tick();
+  {
+    SCOPED_TRACE("ASL load addr high");
+    expect_regs_change({.pc = NEXT_PC});
+    expect_bus_read(TestProgramStart + 2);
   }
 
   tick();
   {
     SCOPED_TRACE("ASL read data");
-    expect_bus_read(256 - asl_addr);
+    expect_bus_read(asl_addr);
   }
 
   tick();
   {
     SCOPED_TRACE("ASL write data");
-    expect_bus_write(256 - asl_addr, asl_addr << 1);
+    expect_bus_write(asl_addr, (asl_addr << 1) & 0xFF);
   }
 
   tick(); // Get next opcode
   tick(); // Decode
 
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("LSR perform op");
-    expect_bus_write(256 - lsr_addr, lsr_addr >> 1);
+    expect_bus_write(lsr_addr, (lsr_addr >> 1) & 0xFF);
   }
 
   tick(); // Get next opcode
   tick(); // Decode
 
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("ROL perform op");
-    expect_bus_write(256 - rol_addr, rol(rol_addr));
+    expect_bus_write(rol_addr, rol(rol_addr & 0xFF));
   }
 
   tick(); // Get next opcode
   tick(); // Decode
 
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("ROR perform op");
-    expect_bus_write(256 - ror_addr, ror(ror_addr));
+    expect_bus_write(ror_addr, ror(ror_addr & 0xFF));
   }
 }
 
-TEST_F(ZeroPageInstructions, CmpTest)
+TEST_F(AbsoluteInstructions, CmpTest)
 {
-  constexpr u8 cmp_addr{0x80};
-  constexpr u8 cpx_addr{0x3f};
-  constexpr u8 cpy_addr{0x15};
+  constexpr Addr cmp_addr{MemoryPage + 0x80};
+  constexpr Addr cpx_addr{MemoryPage + 0x3f};
+  constexpr Addr cpy_addr{MemoryPage + 0x15};
 
   memory_maps.insert({
     TestProgramStart,
     MemoryLayer(
       "Program Memory",
       std::vector< Instruction >{
-        Instruction::zero_page(ZeroPageOpcodes::CMP, 256 - cmp_addr),
-        Instruction::zero_page(ZeroPageOpcodes::CPX, 256 - cpx_addr),
-        Instruction::zero_page(ZeroPageOpcodes::CPY, 256 - cpy_addr),
+        Instruction::absolute(AbsoluteOpcodes::CMP, cmp_addr),
+        Instruction::absolute(AbsoluteOpcodes::CPX, cpx_addr),
+        Instruction::absolute(AbsoluteOpcodes::CPY, cpy_addr),
         Instruction::nop()
       }
     )
   });
 
   LoadRegisters();
-  tick();
 
+  tick();
   {
-    SCOPED_TRACE("CMP load addr");
+    SCOPED_TRACE("CMP load addr low");
     expect_regs_change({.pc = NEXT_PC});
     expect_bus_read(TestProgramStart + 1);
+  }
+
+  tick();
+  {
+    SCOPED_TRACE("CMP load addr high");
+    expect_regs_change({.pc = NEXT_PC});
+    expect_bus_read(TestProgramStart + 2);
   }
 
   tick(2);
@@ -486,7 +532,7 @@ TEST_F(ZeroPageInstructions, CmpTest)
   }
 
   tick(); // Decode
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("CPX read value");
     expect_flags_change({
@@ -496,7 +542,7 @@ TEST_F(ZeroPageInstructions, CmpTest)
   }
 
   tick(); // Decode
-  tick(3);
+  tick(4);
   {
     SCOPED_TRACE("CPY read value");
     expect_flags_change({

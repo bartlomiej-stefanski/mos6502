@@ -43,6 +43,15 @@ Instruction Instruction::zero_page(ZeroPageOpcodes opcode, u8 offset)
   return ins;
 }
 
+Instruction Instruction::absolute(AbsoluteOpcodes opcode, Addr address)
+{
+  Instruction ins;
+  ins.data.emplace_back((u8)opcode);
+  ins.data.emplace_back((u8)(address & 0xFF));
+  ins.data.emplace_back((u8)((address >> 8) & 0xFF));
+  return ins;
+}
+
 Instruction Instruction::jumpAbsolute(Addr address)
 {
   Instruction jpm;

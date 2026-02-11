@@ -9,7 +9,9 @@ VERILOG_TEST_SUITES = \
 	BranchInstructions \
 	ZeroPageInstructions \
 	AbsoluteInstructions \
-	StackInstructions
+	StackInstructions \
+	AbsoluteXInstructions \
+	AbsoluteYInstructions
 
 SOURCEDIR := $(abspath tests-verilator)
 VERILOG_SOURCEDIR := $(abspath verilog/DebugTopLevel.topEntity)

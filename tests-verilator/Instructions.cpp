@@ -59,6 +59,24 @@ Instruction Instruction::absolute(AbsoluteOpcodes opcode, Addr address)
   return ins;
 }
 
+Instruction Instruction::absolute(AbsoluteXOpcodes opcode, Addr address)
+{
+  Instruction ins;
+  ins.data.emplace_back((u8)opcode);
+  ins.data.emplace_back((u8)(address & 0xFF));
+  ins.data.emplace_back((u8)((address >> 8) & 0xFF));
+  return ins;
+}
+
+Instruction Instruction::absolute(AbsoluteYOpcodes opcode, Addr address)
+{
+  Instruction ins;
+  ins.data.emplace_back((u8)opcode);
+  ins.data.emplace_back((u8)(address & 0xFF));
+  ins.data.emplace_back((u8)((address >> 8) & 0xFF));
+  return ins;
+}
+
 Instruction Instruction::jumpAbsolute(Addr address)
 {
   Instruction jpm;

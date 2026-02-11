@@ -102,6 +102,38 @@ enum class ZeroPageOpcodes : u8
   ROR = 0x66,
 };
 
+enum class ZeroPageXOpcodes : u8
+{
+  STY = 0x94,
+  STA = 0x95,
+
+  LDY = 0xB4,
+  LDA = 0xB5,
+
+  CMP = 0xD5,
+
+  ORA = 0x15,
+  AND = 0x35,
+  EOR = 0x55,
+
+  ADC = 0x75,
+  SBC = 0xF5,
+
+  INC = 0xF6,
+  DEC = 0xD6,
+
+  ASL = 0x16,
+  LSR = 0x56,
+  ROL = 0x36,
+  ROR = 0x76,
+};
+
+enum class ZeroPageYOpcodes : u8
+{
+  STX = 0x96,
+  LDX = 0xB6,
+};
+
 enum class AbsoluteOpcodes : u8
 {
   BIT = 0x2C,
@@ -190,6 +222,8 @@ public:
   static Instruction inner(InnerStateOpcodes opcode);
   static Instruction branch(BranchOpcodes opcode, i8 offset);
   static Instruction zero_page(ZeroPageOpcodes opcode, u8 offset);
+  static Instruction zero_page(ZeroPageXOpcodes opcode, u8 offset);
+  static Instruction zero_page(ZeroPageYOpcodes opcode, u8 offset);
   static Instruction absolute(AbsoluteOpcodes opcode, Addr address);
   static Instruction absolute(AbsoluteXOpcodes opcode, Addr address);
   static Instruction absolute(AbsoluteYOpcodes opcode, Addr address);

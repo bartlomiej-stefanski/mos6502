@@ -50,6 +50,22 @@ Instruction Instruction::zero_page(ZeroPageOpcodes opcode, u8 offset)
   return ins;
 }
 
+Instruction Instruction::zero_page(ZeroPageXOpcodes opcode, u8 offset)
+{
+  Instruction ins;
+  ins.data.emplace_back((u8)opcode);
+  ins.data.emplace_back(offset);
+  return ins;
+}
+
+Instruction Instruction::zero_page(ZeroPageYOpcodes opcode, u8 offset)
+{
+  Instruction ins;
+  ins.data.emplace_back((u8)opcode);
+  ins.data.emplace_back(offset);
+  return ins;
+}
+
 Instruction Instruction::absolute(AbsoluteOpcodes opcode, Addr address)
 {
   Instruction ins;

@@ -8,6 +8,8 @@ VERILOG_TEST_SUITES = \
 	InnerStateInstructions \
 	BranchInstructions \
 	ZeroPageInstructions \
+	ZeroPageXInstructions \
+	ZeroPageYInstructions \
 	AbsoluteInstructions \
 	StackInstructions \
 	AbsoluteXInstructions \

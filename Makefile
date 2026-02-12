@@ -1,23 +1,9 @@
 CXX = g++
 VERILATOR = verilator
 
-VERILOG_TEST_SUITES = \
-	SanityCheck \
-	ResetCheck \
-	ImmediateInstructions \
-	InnerStateInstructions \
-	BranchInstructions \
-	ZeroPageInstructions \
-	ZeroPageXInstructions \
-	ZeroPageYInstructions \
-	AbsoluteInstructions \
-	AbsoluteXInstructions \
-	AbsoluteYInstructions \
-	StackInstructions \
-	IndirectXInstructions \
-	IndirectYInstructions
-
 SOURCEDIR := $(abspath tests-verilator)
+ALL_SOURCES := $(shell find $(SOURCEDIR) -name "*.cpp")
+
 VERILOG_SOURCEDIR := $(abspath verilog/DebugTopLevel.topEntity)
 BUILDDIR = $(abspath .build)
 
@@ -30,7 +16,6 @@ LDFLAGS := $(GTEST_LIBS)
 VERILATOR_IGNORE_CLASH_WARNINGS = -Wno-WIDTH -Wno-CASEINCOMPLETE -Wno-UNOPTFLAT
 VERILATOR_FLAGS := $(VERILATOR_IGNORE_CLASH_WARNINGS) -j $(shell nproc) -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS)"
 
-COMMON_SRC = $(wildcard $(SOURCEDIR)/*.cpp)
 VERILATOR_SOURCES = $(wildcard $(VERILOG_SOURCEDIR)/*.v)
 
 .PHONY: run clean compile-clash test-prop vtest test full
@@ -45,23 +30,17 @@ compile-clash:
 all: compile-clash only-tests
 
 only-tests: paths
-	@for test_suite in $(VERILOG_TEST_SUITES); do \
-	  mkdir -p $(BUILDDIR)/$$test_suite ; \
-    $(VERILATOR) --top-module topEntity --Mdir $(BUILDDIR)/$$test_suite \
-      $(VERILATOR_FLAGS) -I$(SOURCEDIR) --cc --build --exe \
-      $(VERILATOR_SOURCES) \
-      $(SOURCEDIR)/"$$test_suite"/*.cpp \
-      $(COMMON_SRC) ; \
-  done
+	@mkdir -p $(BUILDDIR)
+	$(VERILATOR) --top-module topEntity --Mdir $(BUILDDIR) \
+	  $(VERILATOR_FLAGS) -I$(SOURCEDIR) --cc --build --exe \
+	  $(VERILATOR_SOURCES) \
+	  $(ALL_SOURCES)
 
 test-prop:
 	cabal test
 
 vtest: only-tests
-	@for test_suite in $(VERILOG_TEST_SUITES); do \
-	  echo -e "---------- RUNNING TEST SUITE $$test_suite ----------" ; \
-    $(BUILDDIR)/$$test_suite/VtopEntity ; \
-  done
+	$(BUILDDIR)/VtopEntity
 
 test: test-prop vtest
 

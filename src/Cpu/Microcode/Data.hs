@@ -86,7 +86,7 @@ nopMicroOP =
       _spOperation = SPNone
     }
 
-type RomSize = 700
+type RomSize = 128
 
 type MicroOPRomAddress = Index RomSize
 

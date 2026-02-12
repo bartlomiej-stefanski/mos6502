@@ -5,7 +5,7 @@ import Cpu.Data
 import Cpu.Instructions
 import Cpu.Microcode.Data
 import Cpu.Microcode.Gen
-import qualified Data.List (mapAccumL)
+import qualified Data.List (findIndex, isPrefixOf, mapAccumL, tails)
 import qualified Prelude
 
 microcodeInstructions :: (Instruction, AddressingMode) -> [MicroOP]
@@ -37,14 +37,29 @@ opcodeList = [
 microInstructionList :: [(Data, [MicroOP])]
 microInstructionList = Prelude.map (\opcode -> (opcode, microcodeInstructions $ decode opcode)) opcodeList
 
+findSubFragment :: [MicroOP] -> [MicroOP] -> Maybe Int
+findSubFragment list patt = Data.List.findIndex (Data.List.isPrefixOf patt) (Data.List.tails list)
+
 linkMicrocode :: [(Data, [MicroOP])] -> [LinkedMicrocode]
-linkMicrocode microcodeList = snd $ Data.List.mapAccumL calcAddress startOffset microcodeList
+linkMicrocode microcodeList = snd $ Data.List.mapAccumL calcAddress (startOffset, []) microcodeList
   where
-    calcAddress :: MicroOPRomAddress -> (Data, [MicroOP]) -> (MicroOPRomAddress, LinkedMicrocode)
-    calcAddress acc curr = (acc + currLen, (fst curr, acc, microOps))
+    calcAddress :: (MicroOPRomAddress, [MicroOP]) -> (Data, [MicroOP]) -> ((MicroOPRomAddress, [MicroOP]), LinkedMicrocode)
+    calcAddress acc curr = thisOpcode
       where
+        microOpStart = fst acc
+        opsSoFar = snd acc
+
+        opcode = fst curr
         microOps = snd curr
         currLen = fromIntegral $ Prelude.length microOps :: MicroOPRomAddress
+
+        collectedOps = opsSoFar Prelude.++ microOps
+
+        subPatternStart = findSubFragment opsSoFar microOps
+
+        thisOpcode = case subPatternStart of
+          Nothing -> ((microOpStart + currLen, collectedOps), (opcode, microOpStart, microOps))
+          Just offset -> ((microOpStart, opsSoFar), (opcode, (fromIntegral offset) + startOffset, []))
 
     startOffset = fromIntegral $ Prelude.length resetMicroOps :: MicroOPRomAddress
 

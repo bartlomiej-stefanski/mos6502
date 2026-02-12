@@ -7,6 +7,8 @@ ALL_SOURCES := $(shell find $(SOURCEDIR) -name "*.cpp")
 VERILOG_SOURCEDIR := $(abspath verilog/DebugTopLevel.topEntity)
 BUILDDIR = $(abspath .build)
 
+ROMDIR = $(abspath roms)
+
 GTEST_CFLAGS := $(shell pkg-config --cflags gtest)
 GTEST_LIBS := $(shell pkg-config --libs gtest)
 
@@ -23,6 +25,7 @@ VERILATOR_SOURCES = $(wildcard $(VERILOG_SOURCEDIR)/*.v)
 
 paths:
 	mkdir -p $(BUILDDIR)
+	mkdir -p $(ROMDIR)
 
 compile-clash:
 	@cabal run clash DebugTopLevel -- --verilog
@@ -45,6 +48,21 @@ vtest: only-tests
 test: test-prop vtest
 
 full: compile-clash test
+
+
+# VGA SIM SETTINGS
+
+VGA_SOURCE_DIR = $(abspath VGASim)
+
+VGA_INCLUDES = -I$(VGA_SOURCE_DIR)
+
+vga-font: paths
+	mkdir -p $(BUILDDIR)/vga-font
+	$(CXX) $(CXXFLAGS) $(VGA_INCLUDES) -DGEN_FONT_FILE -o $(BUILDDIR)/vga-font/gen_font_file $(VGA_SOURCE_DIR)/Font.cpp
+
+$(ROMDIR)/font8x8rom.bin: vga-font
+	$(BUILDDIR)/vga-font/gen_font_file > $(ROMDIR)/font8x8rom.bin
+
 
 clean:
 	rm -rf $(BUILDDIR) $(VERILOG_SOURCEDIR)

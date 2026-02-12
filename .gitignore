@@ -25,7 +25,7 @@ cabal.project.local~
 
 # Verilated haskell code artifacts
 verilog
-.bin
+*.bin
 
 # Ignore verilator test artifacts
 .build

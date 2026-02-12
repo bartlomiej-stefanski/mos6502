@@ -1,35 +1,3 @@
-// Quartus Prime Verilog Template
-// Single port RAM with single read/write address 
-module single_port_ram 
-#(parameter DATA_WIDTH=8, parameter ADDR_WIDTH=16)
-(
-	input [(DATA_WIDTH-1):0] data,
-	input [(ADDR_WIDTH-1):0] addr,
-	input we, clk,
-	output [(DATA_WIDTH-1):0] q
-);
-
-	// Declare the RAM variable
-	reg [DATA_WIDTH-1:0] ram[2**ADDR_WIDTH-1:0];
-
-	// Variable to hold the registered read address
-	reg [ADDR_WIDTH-1:0] addr_reg;
-
-	always @ (posedge clk)
-	begin
-		// Write
-		if (we)
-			ram[addr] <= data;
-
-		addr_reg <= addr;
-	end
-
-	// Continuous assignment implies read returns NEW data.
-	// This is the natural behavior of the TriMatrix memory
-	// blocks in Single Port mode.  
-	assign q = ram[addr_reg];
-
-endmodule
 
 module SevenSegmentDriver(input [3:0] number, output reg [6:0] data);
     always @* begin
@@ -100,48 +68,27 @@ module MOS6502(
 	wire rst = KEY[0];
 	wire enable = KEY[1];
 
-	wire [15:0] addr_out;
-	wire write;
-	wire [7:0] data_out;
-
-	wire [7:0] data_in;
-
 //=======================================================
 //  Structural coding
 //=======================================================
 
-	single_port_ram ram(
-		.data(data_out),
-		.addr(addr_out),
-		.we(write),
-		.clk(clk),
-		.q(data_in)
-	);
+
 
 	topEntity cpu0(
 		.CLK(clk),
 		.RESET(rst),
 		.ENABLE(enable),
-		.MEM_DATA_IN(data_in | SW[7:0]),
+		.SWITCHES(SW[7:0]),
 
-		.MEM_ADDR(addr_out),
-		.MEM_W(write),
-		.MEM_W_DATA(data_out)
+		.VGA_R(VGA_R),
+		.VGA_G(VGA_G),
+		.VGA_B(VGA_B),
+		.VGA_HSYNC(VGA_HS),
+		.VGA_VSYNC(VGA_VS),
+		.VGA_BLANK_N(VGA_BLANK_N),
+		.LEDS(LEDR[7:0])
 	);
-
-	SevenSegmentDriver bus_low0(.number(addr_out[3:0]), .data(HEX0));
-	SevenSegmentDriver bus_low1(.number(addr_out[7:4]), .data(HEX1));
-	SevenSegmentDriver bus_low2(.number(addr_out[11:8]), .data(HEX2));
-	SevenSegmentDriver bus_low3(.number(addr_out[15:12]), .data(HEX3));
 	
-	assign LEDR[7:0] = data_in;
-	
-	assign VGA_BLANK_N = 0;
-	assign VGA_B = 0;
-	assign VGA_CLK = 0;
-	assign VGA_G = 0;
-	assign VGA_HS = 0;
-	assign VGA_R = 0;
-	assign VGA_SYNC_N = 0;
-	assign VGA_VS = 0;
+	assign VGA_SYNC_N = 1;
+	assign VGA_CLK = clk;
 endmodule

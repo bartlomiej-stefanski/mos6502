@@ -1,40 +1,19 @@
 #pragma once
 
-#include <stdexcept>
 #include <optional>
 #include <map>
-#include <variant>
 
 #include <gtest/gtest.h>
 
 #include <VtopEntity.h>
 
 #include "Common.hpp"
-#include "Instructions.hpp"
+#include "MemoryLayer.hpp"
 
-using MemoryOccupant = std::variant< Addr, u8, Instruction >;
-using MO = MemoryOccupant;
-
-struct UnmappedMemory : std::runtime_error
-{
-  UnmappedMemory(std::string error_message)
-    : std::runtime_error(error_message)
-  {
-  }
-};
 
 class CpuTest : public ::testing::Test
 {
 protected:
-  struct MemoryLayer : std::vector< u8 >
-  {
-    MemoryLayer(const std::string name, std::vector< MemoryOccupant >&& data);
-    MemoryLayer(const std::string name, std::vector< u8 >&& data);
-    MemoryLayer(const std::string name, std::vector< Instruction >&& data);
-
-    std::string name;
-  };
-
   VtopEntity* cpu{nullptr};
 
   std::map< Addr, MemoryLayer > memory_maps;

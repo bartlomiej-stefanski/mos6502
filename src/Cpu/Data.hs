@@ -5,6 +5,7 @@ import Clash.Prelude
 type Data = Unsigned 8
 
 type AddressSpace = 65536
+
 type Addr = Unsigned (CLog 2 AddressSpace)
 
 splitAddr :: Addr -> (Data, Data)

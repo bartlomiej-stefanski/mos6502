@@ -1,27 +1,37 @@
 module VgaDriver where
 
-import Data.Proxy
 import Clash.Prelude
 import Cpu.Data
+import Data.Proxy
 
 -- Timing for VGA 640x480, 60Hz
 type HVisible = 640
-type HFront   = 16
-type HSync    = 96
-type HBack    = 48
-type HTotal   = HVisible + HFront + HSync + HBack
+
+type HFront = 16
+
+type HSync = 96
+
+type HBack = 48
+
+type HTotal = HVisible + HFront + HSync + HBack
 
 type VVisible = 480
-type VFront   = 10
-type VSync    = 2
-type VBack    = 33
-type VTotal   = VVisible + VFront + VSync + VBack
 
-type VgaRamSize = 2048
+type VFront = 10
+
+type VSync = 2
+
+type VBack = 33
+
+type VTotal = VVisible + VFront + VSync + VBack
+
+type VgaRamSize = 8192
+
 type VgaAddr = Unsigned (CLog 2 VgaRamSize)
 
 hVisible :: VgaAddr
 hVisible = fromIntegral $ natVal (Proxy :: Proxy HVisible)
+
 vVisible :: VgaAddr
 vVisible = fromIntegral $ natVal (Proxy :: Proxy VVisible)
 
@@ -30,6 +40,7 @@ lettersPerRow = hVisible `div` 8
 
 vgaBufferStart :: Addr
 vgaBufferStart = 0x6000
+
 vgaBufferEnd :: Addr
 vgaBufferEnd = vgaBufferStart + (fromInteger $ natVal (Proxy :: Proxy VgaRamSize))
 
@@ -55,28 +66,29 @@ nextVgaSync (oldHorizontal, oldVertical) = (nextHorizontal, nextVertical)
   where
     nextHorizontal = case oldHorizontal of
       HSVisible x -> if x == maxBound then HSFront 0 else HSVisible (x + 1)
-      HSFront x   -> if x == maxBound then HSSync 0 else HSFront (x + 1)
-      HSSync x    -> if x == maxBound then HSBack 0 else HSSync (x + 1)
-      HSBack x    -> if x == maxBound then HSVisible 0 else HSBack (x + 1)
+      HSFront x -> if x == maxBound then HSSync 0 else HSFront (x + 1)
+      HSSync x -> if x == maxBound then HSBack 0 else HSSync (x + 1)
+      HSBack x -> if x == maxBound then HSVisible 0 else HSBack (x + 1)
     horizontalFlipped = oldHorizontal == HSBack maxBound
 
     nextVertical = case oldVertical of
       VSVisible y -> if y == maxBound && horizontalFlipped then VSFront 0 else VSVisible (y + 1)
-      VSFront y   -> if y == maxBound && horizontalFlipped then VSSync 0 else VSFront (y + 1)
-      VSSync y    -> if y == maxBound && horizontalFlipped then VSBack 0 else VSSync (y + 1)
-      VSBack y    -> if y == maxBound && horizontalFlipped then VSVisible 0 else VSBack (y + 1)
-
+      VSFront y -> if y == maxBound && horizontalFlipped then VSSync 0 else VSFront (y + 1)
+      VSSync y -> if y == maxBound && horizontalFlipped then VSBack 0 else VSSync (y + 1)
+      VSBack y -> if y == maxBound && horizontalFlipped then VSVisible 0 else VSBack (y + 1)
 
 data VgaOutput = VgaOutput
-  { _vgaR :: Data
-  , _vgaG :: Data
-  , _vgaB :: Data
-  , _hSync :: Bool
-  , _vSync :: Bool
-  , _blank :: Bool
-  } deriving (Eq, Show, Generic, NFDataX)
+  { _vgaR :: Data,
+    _vgaG :: Data,
+    _vgaB :: Data,
+    _hSync :: Bool,
+    _vSync :: Bool,
+    _blank :: Bool
+  }
+  deriving (Eq, Show, Generic, NFDataX)
 
-delayEn2 :: (HiddenClockResetEnable dom, NFDataX a) =>
+delayEn2 ::
+  (HiddenClockResetEnable dom, NFDataX a) =>
   a ->
   Signal dom Bool ->
   Signal dom a ->
@@ -95,7 +107,8 @@ getCharLine line char = bitCoerce (char, line)
 
 type VgaMemoryOp = RamOp VgaRamSize Data
 
-vgaDriver :: (HiddenClockResetEnable dom) =>
+vgaDriver ::
+  (HiddenClockResetEnable dom) =>
   Signal dom Data ->
   Signal dom (VgaMemoryOp, VgaOutput)
 vgaDriver ramDataIn = bundle (RamRead <$> ramReadAddr, VgaOutput <$> vgaR <*> vgaG <*> vgaB <*> hSyncOut <*> vSyncOut <*> pixelEn)
@@ -110,27 +123,27 @@ vgaDriver ramDataIn = bundle (RamRead <$> ramReadAddr, VgaOutput <$> vgaR <*> vg
     getX :: HorizontalSync -> VgaAddr
     getX = \case
       HSVisible x -> fromIntegral $ x
-      _           -> errorX "Not-visible pixels should not be fetched"
+      _ -> 0
 
     getY :: VerticalSync -> VgaAddr
     getY = \case
       VSVisible y -> fromIntegral $ y
-      _           -> errorX "Not-visible pixels should not be fetched"
+      _ -> 0
 
     getPixelEn :: (HorizontalSync, VerticalSync) -> Bool
     getPixelEn = \case
       (HSVisible _, VSVisible _) -> True
-      _                         -> False
+      _ -> False
 
     getHSync :: HorizontalSync -> Bool
     getHSync = \case
       HSSync _ -> True
-      _        -> False
+      _ -> False
 
     getVSync :: VerticalSync -> Bool
     getVSync = \case
       VSSync _ -> True
-      _        -> False
+      _ -> False
 
     currX = getX <$> vgaHorizontalSync
     currY = getY <$> vgaVerticalSync

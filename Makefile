@@ -2,9 +2,11 @@ CXX = g++
 VERILATOR = verilator
 
 SOURCEDIR := $(abspath tests-verilator)
-ALL_SOURCES := $(shell find $(SOURCEDIR) -name "*.cpp")
+COMMON_SOURCES := $(wildcard $(SOURCEDIR)/*.cpp)
 
-VERILOG_SOURCEDIR := $(abspath verilog/DebugTopLevel.topEntity)
+DEBUG_CPU_SOURCES := $(shell find $(SOURCEDIR)/DebugCpuTests -name "*.cpp")
+
+VERILOG_SOURCEDIR := $(abspath verilog)
 BUILDDIR = $(abspath .build)
 
 ROMDIR = $(abspath roms)
@@ -12,13 +14,13 @@ ROMDIR = $(abspath roms)
 GTEST_CFLAGS := $(shell pkg-config --cflags gtest)
 GTEST_LIBS := $(shell pkg-config --libs gtest)
 
-CXXFLAGS := -std=c++23 -Wall -Wextra -I$(SOURCEDIR) $(GTEST_CFLAGS)
+CXXFLAGS := -std=c++23 -Wall -Wextra -I$(SOURCEDIR) -I$(SOURCEDIR)/DebugCpuTests $(GTEST_CFLAGS)
 LDFLAGS := $(GTEST_LIBS)
 
 VERILATOR_IGNORE_CLASH_WARNINGS = -Wno-WIDTH -Wno-CASEINCOMPLETE -Wno-UNOPTFLAT
 VERILATOR_FLAGS := $(VERILATOR_IGNORE_CLASH_WARNINGS) -j $(shell nproc) -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS)"
 
-VERILATOR_SOURCES = $(wildcard $(VERILOG_SOURCEDIR)/*.v)
+DEBUG_VERILATOR_SOURCES = $(wildcard $(VERILOG_SOURCEDIR)/DebugTopLevel.topEntity/*.v)
 
 .PHONY: run clean compile-clash test-prop vtest test full
 .DEFAULT_GOAL := all
@@ -27,17 +29,17 @@ paths:
 	mkdir -p $(BUILDDIR)
 	mkdir -p $(ROMDIR)
 
-compile-clash:
+compile-clash-debug:
 	@cabal run clash DebugTopLevel -- --verilog
 
-all: compile-clash only-tests
+all: compile-clash-debug only-tests
 
 only-tests: paths
 	@mkdir -p $(BUILDDIR)
 	$(VERILATOR) --top-module topEntity --Mdir $(BUILDDIR) \
 	  $(VERILATOR_FLAGS) -I$(SOURCEDIR) --cc --build --exe \
-	  $(VERILATOR_SOURCES) \
-	  $(ALL_SOURCES)
+	  $(DEBUG_VERILATOR_SOURCES) \
+	  $(DEBUG_CPU_SOURCES) $(COMMON_SOURCES)
 
 test-prop:
 	cabal test
@@ -47,21 +49,34 @@ vtest: only-tests
 
 test: test-prop vtest
 
-full: compile-clash test
+full: compile-clash-debug test
 
 
 # VGA SIM SETTINGS
 
-VGA_SOURCE_DIR = $(abspath VGASim)
+ROMGEN_SOURCE_DIR = $(abspath RomGen)
+ROMGEN_SOURCES = $(wildcard $(ROMGEN_SOURCE_DIR)/*.cpp) $(COMMON_SOURCES)
 
-VGA_INCLUDES = -I$(VGA_SOURCE_DIR)
+ROMGEN_INCLUDES = -I$(ROMGEN_SOURCE_DIR)
 
 vga-font: paths
 	mkdir -p $(BUILDDIR)/vga-font
-	$(CXX) $(CXXFLAGS) $(VGA_INCLUDES) -DGEN_FONT_FILE -o $(BUILDDIR)/vga-font/gen_font_file $(VGA_SOURCE_DIR)/Font.cpp
+	$(CXX) $(CXXFLAGS) $(ROMGEN_INCLUDES) -o $(BUILDDIR)/vga-font/vga-font $(ROMGEN_SOURCE_DIR)/Font/Font.cpp $(ROMGEN_SOURCES)
 
 $(ROMDIR)/font8x8rom.bin: vga-font
-	$(BUILDDIR)/vga-font/gen_font_file > $(ROMDIR)/font8x8rom.bin
+	$(BUILDDIR)/vga-font/vga-font > $(ROMDIR)/font8x8rom.bin
+
+IdSwitches: paths
+	mkdir -p $(BUILDDIR)/IdSwitches
+	$(CXX) $(CXXFLAGS) $(ROMGEN_INCLUDES) -o $(BUILDDIR)/IdSwitches/IdSwitches $(ROMGEN_SOURCE_DIR)/IdSwitches/IdSwitches.cpp $(ROMGEN_SOURCES)
+
+
+$(ROMDIR)/IdSwitches.bin: IdSwitches
+	$(BUILDDIR)/IdSwitches/IdSwitches > $(ROMDIR)/IdSwitches.bin
+
+compile-clash-vga: $(ROMDIR)/font8x8rom.bin $(ROMDIR)/IdSwitches.bin
+	@ln -sf $(ROMDIR)/IdSwitches.bin $(ROMDIR)/code.bin
+	@cabal run clash TopLevel -- --verilog
 
 
 clean:

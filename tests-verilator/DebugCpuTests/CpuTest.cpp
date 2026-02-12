@@ -1,47 +1,12 @@
 #include <cstdlib>
 #include <iostream>
 #include <format>
-#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "CpuTest.hpp"
-#include "Instructions.hpp"
+#include "MemoryLayer.hpp"
 
-CpuTest::MemoryLayer::MemoryLayer(const std::string name, std::vector< MemoryOccupant >&& data)
-  : std::vector< u8 >(), name(name)
-{
-  for (auto& element: data) {
-    if (std::holds_alternative< Addr >(element)) {
-      const Addr addr{std::get< Addr >(element)};
-      this->push_back(addr & 0xFF);
-      this->push_back(addr >> 8);
-    }
-    else if (std::holds_alternative< u8 >(element)) {
-      const u8 value{std::get< u8 >(element)};
-      this->push_back(value);
-    }
-    else if (std::holds_alternative< Instruction >(element)) {
-      const Instruction instr{std::get< Instruction >(element)};
-      const auto bytes{instr.to_bytes()};
-      this->insert(this->end(), bytes.begin(), bytes.end());
-    }
-  }
-}
-
-CpuTest::MemoryLayer::MemoryLayer(const std::string name, std::vector< u8 >&& data)
-  : std::vector< u8 >(data), name(name)
-{
-}
-
-CpuTest::MemoryLayer::MemoryLayer(const std::string name, std::vector< Instruction >&& data)
-  : std::vector< u8 >(), name(name)
-{
-  for (auto& instr: data) {
-    const auto bytes{instr.to_bytes()};
-    this->insert(this->end(), bytes.begin(), bytes.end());
-  }
-}
 
 void CpuTest::SetUpMemory()
 {

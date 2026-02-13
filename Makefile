@@ -78,6 +78,15 @@ compile-clash-counter: $(ROMDIR)/font8x8rom.bin $(ROMDIR)/CounterSample.bin
 	@ln -sf $(ROMDIR)/CounterSample.bin $(ROMDIR)/code.bin
 	@cabal run clash TopLevel -- --verilog
 
+# Build VASM for MOS6502
+VASM_SOURCE_DIR = $(abspath vasm)
+VASM_BUILD_FLAGS = SYNTAX=oldstyle CPU=6502
+
+VASM_BIN = $(VASM_SOURCE_DIR)/obj/vasm6502_oldstyle
+VASM_FLAGS = -Fbin -dotdir
+
+$(VASM_BIN): paths
+	@make -C $(VASM_SOURCE_DIR) $(VASM_BUILD_FLAGS)
 
 clean:
 	rm -rf $(BUILDDIR) $(VERILOG_SOURCEDIR)

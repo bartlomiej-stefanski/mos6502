@@ -48,3 +48,8 @@ greybox_tmp/
 *.smsg
 *.jdi
 *.qws
+
+# VASM artifacts
+vobjdump
+vasm6502_oldstyle
+obj/

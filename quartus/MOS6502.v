@@ -65,7 +65,7 @@ module MOS6502(
 //=======================================================
 
 	wire clk = CLOCK_50;
-	wire rst = KEY[0];
+	wire rst = !KEY[0];
 	wire enable = 1;
 
 //=======================================================
@@ -88,16 +88,6 @@ module MOS6502(
 		.VGA_BLANK_N(VGA_BLANK_N),
 		.LEDS(LEDR[7:0])
 	);
-
-/*
-	topEntity cpu0(
-		.CLK(clk),
-		.RESET(rst),
-		.ENABLE(enable),
-		.SWITCHES(SW[7:0]),
-		
-	);
-*/
 
 	assign VGA_SYNC_N = 1;
 	assign VGA_CLK = clk;

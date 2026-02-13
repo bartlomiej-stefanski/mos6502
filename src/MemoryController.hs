@@ -94,7 +94,6 @@ memoryController cpuRamOp vgaOp switchInput = (cpuData, vgaData, ledData)
   where
     cpuVgaOp = getVgaQuery <$> cpuRamOp
     (cpuVgaData, vgaData) = mos6502VgaMemory cpuVgaOp vgaOp
-    -- (cpuVgaData, vgaData) = (pure 0, pure 0)
 
     cpuCodeData = mos6502CodeRom $ getCodeRomQuery <$> cpuRamOp
 
@@ -103,6 +102,7 @@ memoryController cpuRamOp vgaOp switchInput = (cpuData, vgaData, ledData)
     ramData = mos6502Ram ramRead ramWrite
 
     (updateLed, ledWrite) = unbundle $ getLedOperation <$> cpuRamOp
-    ledData = regEn 0x2 updateLed ledWrite
+    ledData = regEn 0 updateLed ledWrite
 
-    cpuData = chooseBusData <$> cpuRamOp <*> cpuVgaData <*> (bitCoerce <$> cpuCodeData) <*> ramData <*> switchInput
+    delayChoseBusData = register (RamRead 0 :: CpuMemoryOp) cpuRamOp
+    cpuData = chooseBusData <$> delayChoseBusData <*> cpuVgaData <*> (bitCoerce <$> cpuCodeData) <*> ramData <*> switchInput

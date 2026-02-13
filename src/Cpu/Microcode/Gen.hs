@@ -56,8 +56,8 @@ microcodeGenerator :: (Instruction, AddressingMode) -> [MicroOP -> MicroOP]
 microcodeGenerator (instruction, addressingMode) =
   case (instruction, addressingMode) of
     (NOP, _) -> [decodeAndFetchPC MicroOpcodeBus]
-    (PHP, _) -> [pushToStack DATA_WRITE_STATUS . readFromBus DATA_READ, decodeAndFetchPC MicroOpcodeBus]
-    (PLP, _) -> [popFromStack . readFromBus DATA_READ, readFromBus DATA_READ_STATUS, decodeAndFetchPC MicroOpcodeBus]
+    (PHP, _) -> [pushToStack DATA_WRITE_STATUS . readFromBus DATA_READ, decodeAndFetchPC MicroOpcodeLatch]
+    (PLP, _) -> [popFromStack . readFromBus DATA_READ, readFromBus DATA_READ_STATUS, decodeAndFetchPC MicroOpcodeLatch]
     (SEC, _) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]
     (CLC, _) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]
     (SED, _) -> [executeCmd . decodeAndFetchPC MicroOpcodeBus]

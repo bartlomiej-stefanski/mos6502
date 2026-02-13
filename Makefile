@@ -66,16 +66,16 @@ vga-font: paths
 $(ROMDIR)/font8x8rom.bin: vga-font
 	$(BUILDDIR)/vga-font/vga-font > $(ROMDIR)/font8x8rom.bin
 
-IdSwitches: paths
-	mkdir -p $(BUILDDIR)/IdSwitches
-	$(CXX) $(CXXFLAGS) $(ROMGEN_INCLUDES) -o $(BUILDDIR)/IdSwitches/IdSwitches $(ROMGEN_SOURCE_DIR)/IdSwitches/IdSwitches.cpp $(ROMGEN_SOURCES)
+CounterSample: paths
+	mkdir -p $(BUILDDIR)/CounterSample
+	$(CXX) $(CXXFLAGS) $(ROMGEN_INCLUDES) -o $(BUILDDIR)/CounterSample/CounterSample $(ROMGEN_SOURCE_DIR)/CounterSample/CounterSample.cpp $(ROMGEN_SOURCES)
 
 
-$(ROMDIR)/IdSwitches.bin: IdSwitches
-	$(BUILDDIR)/IdSwitches/IdSwitches > $(ROMDIR)/IdSwitches.bin
+$(ROMDIR)/CounterSample.bin: CounterSample
+	$(BUILDDIR)/CounterSample/CounterSample > $(ROMDIR)/CounterSample.bin
 
-compile-clash-vga: $(ROMDIR)/font8x8rom.bin $(ROMDIR)/IdSwitches.bin
-	@ln -sf $(ROMDIR)/IdSwitches.bin $(ROMDIR)/code.bin
+compile-clash-counter: $(ROMDIR)/font8x8rom.bin $(ROMDIR)/CounterSample.bin
+	@ln -sf $(ROMDIR)/CounterSample.bin $(ROMDIR)/code.bin
 	@cabal run clash TopLevel -- --verilog
 
 

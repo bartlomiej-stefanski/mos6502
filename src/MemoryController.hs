@@ -4,6 +4,7 @@ import Data.Proxy
 import Clash.Prelude
 import Cpu.Data
 import VgaDriver
+import Utilities.Utils
 
 type CpuMemoryOp = RamOp AddressSpace Data
 
@@ -67,30 +68,38 @@ getRamWriteQuery (RamWrite addr dat) =
 getRamWriteQuery _ = Nothing
 
 switchesAddress :: Addr
-switchesAddress = 0x4000
+switchesAddress = 0x4002
+
+buttonAddress :: Addr
+buttonAddress = 0x4003
 
 ledAddress :: Addr
-ledAddress = 0x4001
+ledAddress = 0x4000
 
-getLedOperation :: CpuMemoryOp -> (Bool, Data)
-getLedOperation (RamWrite addr dat) = (addr == (bitCoerce ledAddress), dat)
-getLedOperation _ = (False, 0)
+segAddress :: Addr
+segAddress = 0x4001
 
-chooseBusData :: CpuMemoryOp -> Data -> Data -> Data -> Data -> Data
-chooseBusData (RamRead addr) vgaData codeData ramData switchData = case addr of
+getPortOperation :: Addr -> CpuMemoryOp -> (Bool, Data)
+getPortOperation portAddr (RamWrite addr dat) = (addr == (bitCoerce portAddr), dat)
+getPortOperation _ _ = (False, 0)
+
+chooseBusData :: CpuMemoryOp -> Data -> Data -> Data -> Data -> Active High -> Data
+chooseBusData (RamRead addr) vgaData codeData ramData switchData button = case addr of
   _ | addr >= (bitCoerce romAddressStart) -> codeData
   _ | addr < (bitCoerce ramSize) -> ramData
   _ | addr == (bitCoerce switchesAddress) -> switchData
+  _ | addr == (bitCoerce buttonAddress) -> if (fromActive button) then 1 else 0
   _ -> vgaData
-chooseBusData _ _ _ _ _ = 0
+chooseBusData _ _ _ _ _ _ = 0
 
 memoryController ::
   (HiddenClockResetEnable dom) =>
   Signal dom CpuMemoryOp ->
   Signal dom VgaMemoryOp ->
   Signal dom Data ->
-  (Signal dom Data, Signal dom Data, Signal dom Data)
-memoryController cpuRamOp vgaOp switchInput = (cpuData, vgaData, ledData)
+  Signal dom (Active High) ->
+  (Signal dom Data, Signal dom Data, Signal dom Data, Signal dom Data)
+memoryController cpuRamOp vgaOp switchInput button = (cpuData, vgaData, ledData, segData)
   where
     cpuVgaOp = getVgaQuery <$> cpuRamOp
     (cpuVgaData, vgaData) = mos6502VgaMemory cpuVgaOp vgaOp
@@ -101,8 +110,11 @@ memoryController cpuRamOp vgaOp switchInput = (cpuData, vgaData, ledData)
     ramWrite = getRamWriteQuery <$> cpuRamOp
     ramData = mos6502Ram ramRead ramWrite
 
-    (updateLed, ledWrite) = unbundle $ getLedOperation <$> cpuRamOp
+    (updateLed, ledWrite) = unbundle $ getPortOperation ledAddress <$> cpuRamOp
     ledData = regEn 0 updateLed ledWrite
 
+    (updateSeg, segWrite) = unbundle $ getPortOperation segAddress <$> cpuRamOp
+    segData = regEn 0x11 updateSeg segWrite
+
     delayChoseBusData = register (RamRead 0 :: CpuMemoryOp) cpuRamOp
-    cpuData = chooseBusData <$> delayChoseBusData <*> cpuVgaData <*> (bitCoerce <$> cpuCodeData) <*> ramData <*> switchInput
+    cpuData = chooseBusData <$> delayChoseBusData <*> cpuVgaData <*> (bitCoerce <$> cpuCodeData) <*> ramData <*> switchInput <*> button

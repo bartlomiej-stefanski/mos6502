@@ -52,7 +52,7 @@ test: test-prop vtest
 full: compile-clash-debug test
 
 
-# VGA SIM SETTINGS
+# Clock SIM SETTINGS
 
 ROMGEN_SOURCE_DIR = $(abspath RomGen)
 ROMGEN_SOURCES = $(wildcard $(ROMGEN_SOURCE_DIR)/*.cpp) $(COMMON_SOURCES)
@@ -66,19 +66,33 @@ vga-font: paths
 $(ROMDIR)/font8x8rom.bin: vga-font
 	$(BUILDDIR)/vga-font/vga-font > $(ROMDIR)/font8x8rom.bin
 
+
 CounterSample: paths
 	mkdir -p $(BUILDDIR)/CounterSample
 	$(CXX) $(CXXFLAGS) $(ROMGEN_INCLUDES) -o $(BUILDDIR)/CounterSample/CounterSample $(ROMGEN_SOURCE_DIR)/CounterSample/CounterSample.cpp $(ROMGEN_SOURCES)
 
-
 $(ROMDIR)/CounterSample.bin: CounterSample
 	$(BUILDDIR)/CounterSample/CounterSample > $(ROMDIR)/CounterSample.bin
+
+
+VgaHelloWorld: paths
+	mkdir -p $(BUILDDIR)/VgaHelloWorld
+	$(CXX) $(CXXFLAGS) $(ROMGEN_INCLUDES) -o $(BUILDDIR)/VgaHelloWorld/VgaHelloWorld $(ROMGEN_SOURCE_DIR)/VgaHelloWorld/VgaHelloWorld.cpp $(ROMGEN_SOURCES)
+
+$(ROMDIR)/VgaHelloWorld.bin: VgaHelloWorld
+	$(BUILDDIR)/VgaHelloWorld/VgaHelloWorld > $(ROMDIR)/VgaHelloWorld.bin
+
 
 compile-clash-counter: $(ROMDIR)/font8x8rom.bin $(ROMDIR)/CounterSample.bin
 	@ln -sf $(ROMDIR)/CounterSample.bin $(ROMDIR)/code.bin
 	@cabal run clash TopLevel -- --verilog
 
+compile-clash-vga: $(ROMDIR)/font8x8rom.bin $(ROMDIR)/VgaHelloWorld.bin
+	@ln -sf $(ROMDIR)/VgaHelloWorld.bin $(ROMDIR)/code.bin
+	@cabal run clash TopLevel -- --verilog
+
 # Build VASM for MOS6502
+
 VASM_SOURCE_DIR = $(abspath vasm)
 VASM_BUILD_FLAGS = SYNTAX=oldstyle CPU=6502
 
@@ -87,6 +101,8 @@ VASM_FLAGS = -Fbin -dotdir
 
 $(VASM_BIN): paths
 	@make -C $(VASM_SOURCE_DIR) $(VASM_BUILD_FLAGS)
+
+
 
 clean:
 	rm -rf $(BUILDDIR) $(VERILOG_SOURCEDIR)

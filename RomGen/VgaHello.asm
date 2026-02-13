@@ -1,14 +1,13 @@
-  .org $E000      ; Adres startowy ROMu w Twoim systemie
+  .org $0x8000    ; Memory ROM start
 
 Reset:
-  SEI             ; Wyłącz przerwania
-  CLD             ; Wyłącz tryb dziesiętny
   LDX #$FF
-  TXS             ; Ustaw stos
+  TXS
 
 Start:
   LDA #$41        ; 'A'
   STA $A000       ; Wpisz do VGA
+
 Loop:
   JMP Loop
 

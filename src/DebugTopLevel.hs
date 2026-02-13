@@ -6,7 +6,6 @@ import Cpu.Alu
 import Cpu.Cpu
 import Cpu.CpuState
 import Cpu.Data
-import Cpu.Microcode.Data
 import Cpu.Microcode.Rom
 import Utilities.Utils
 
@@ -45,8 +44,6 @@ topEntity clk rst enable busInput = (memAddr, memW, memWData, pc, sp, regA, regX
 
     -- microOpQuery will be latched in microcodeRom - it must pass-through here
     microOPQuery = _microOPQuery <$> directBusOp
-
-    microOP :: Signal System MicroOP
     microOP = withClockResetEnable clk rst enable $ microcodeRom microOPQuery
 
     -- cpuState is 'packed into' mealy output and so it is not latched.

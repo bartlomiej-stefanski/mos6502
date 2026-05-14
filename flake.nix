@@ -53,8 +53,8 @@
         # Packages for development shells
         devPackages = with pkgs; [
           # Heavy FPGA Tools
-          quartus-prime-lite
-          openocd
+          # quartus-prime-lite
+          # openocd
 
           # GUI & Visualization
           gtkwave

@@ -1,8 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "verilated.h"
-
-#include "Common.hpp"
+#include "VerilatedContext.hpp"
 
 int main(int argc, char** argv)
 {

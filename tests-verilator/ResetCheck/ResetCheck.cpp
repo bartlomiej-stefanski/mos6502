@@ -2,7 +2,6 @@
 
 #include <VtopEntity.h>
 
-#include "Common.hpp"
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
 

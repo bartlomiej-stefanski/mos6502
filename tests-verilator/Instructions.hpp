@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "Common.hpp"
+#include "Types.hpp"
 
 enum class StackOpcodes : u8
 {

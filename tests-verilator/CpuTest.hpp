@@ -9,8 +9,13 @@
 
 #include <VtopEntity.h>
 
-#include "Common.hpp"
 #include "Instructions.hpp"
+
+constexpr Addr NmiVector{0xFFFC};
+constexpr Addr ResetVector{0xFFFC};
+constexpr Addr InterruptVector{0xFFFC};
+
+constexpr Addr StackStart{0x100};
 
 using MemoryOccupant = std::variant< Addr, u8, Instruction >;
 using MO = MemoryOccupant;

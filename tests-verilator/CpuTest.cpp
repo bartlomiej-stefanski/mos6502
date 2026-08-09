@@ -1,5 +1,4 @@
 #include <cstdlib>
-#include <iostream>
 #include <format>
 #include <vector>
 
@@ -7,6 +6,7 @@
 
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
+#include "Logger.hpp"
 
 CpuTest::MemoryLayer::MemoryLayer(const std::string name, std::vector< MemoryOccupant >&& data)
   : std::vector< u8 >(), name(name)
@@ -100,7 +100,7 @@ u8& CpuTest::get_memory(const Addr addr, const bool is_write)
     throw UnmappedMemory(message);
   }
   else {
-    std::cerr << message << '\n';
+    WARNING("%s", message);
     static u8 zero = 0;
     return zero = 0;
   }

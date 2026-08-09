@@ -135,8 +135,8 @@ cpuExecutor cpuState inputData = (outCpuState, outputData)
     readData = _readData busOP
     latchBusData cpuS = cpuS {_dataLatch = dataOnBus}
     applyReadData cpuS = case readData of
-      Just DATA_READ_PC -> latchBusData cpuS {_regPC = bitCoerce (dataOnBus, dataLatched)}
-      Just DATA_READ_STATUS -> latchBusData cpuS {_cpuFlags = cpuFlagsFromData dataOnBus}
+      Just DATA_READ_PC -> cpuS {_regPC = bitCoerce (dataOnBus, dataLatched)}
+      Just DATA_READ_STATUS -> cpuS {_cpuFlags = cpuFlagsFromData dataOnBus}
       Just DATA_READ -> latchBusData cpuS
       Nothing -> cpuS
 

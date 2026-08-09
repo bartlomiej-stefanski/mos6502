@@ -50,10 +50,10 @@ prop_handles_bus_read = H.property do
   let expectedState = pcIncrementer incrementPC $ case readOp of
         DATA_READ -> latchBusData cpuState
         DATA_READ_PC ->
-          latchBusData cpuState {_regPC = bitCoerce (busInput, _dataLatch cpuState)}
+          cpuState {_regPC = bitCoerce (busInput, _dataLatch cpuState)}
         DATA_READ_STATUS ->
           let expectedFlags = cpuFlagsFromData busInput
-           in latchBusData cpuState {_cpuFlags = expectedFlags}
+           in cpuState {_cpuFlags = expectedFlags}
 
   let (newState, outputData) = cpuExecutor cpuState inputData
   newState H.=== expectedState
@@ -152,10 +152,10 @@ prop_handles_bus_read_and_write = H.property do
         DATA_READ ->
           latchBusData cpuWithLatch
         DATA_READ_PC ->
-          latchBusData cpuState {_regPC = bitCoerce (busInput, _dataLatch cpuWithLatch)}
+          cpuWithLatch {_regPC = bitCoerce (busInput, _dataLatch cpuWithLatch)}
         DATA_READ_STATUS ->
           let expectedFlags = cpuFlagsFromData busInput
-           in latchBusData cpuWithLatch {_cpuFlags = expectedFlags}
+           in cpuWithLatch {_cpuFlags = expectedFlags}
 
   let (x, y, pc, sp) = (_regX cpuState, _regY cpuState, _regPC cpuState, _regSP cpuState)
   let offset :: Addr = case addressOffset of

@@ -52,7 +52,7 @@ prop_reset_works = H.property $ do
 
   _regPC (_cpuState stateWithBus) H.=== resetPC + 1
   _addressToQuery directBus H.=== resetPC
-  _dataLatch (_cpuState stateWithBus) H.=== pcHigh
+  _dataLatch (_cpuState stateWithBus) H.=== pcLow
 
 prop_xor_works :: H.Property
 prop_xor_works = H.property $ do

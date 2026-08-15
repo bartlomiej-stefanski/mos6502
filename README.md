@@ -8,21 +8,21 @@ It uses unstable packages to get the newest verilator possible (should work with
 ## Building
 
 ```sh
-# Build the project
+# Build the project.
 cabal build
 
-# Run interactive repl with Clashi
+# Run interactive repl with Clashi.
 cabal run clashi
 
-# Generate HDL
+# Generate HDL.
 cabal run clash TopLevel -- --${hdl_language}
 
-# Run tests
+# Run tests.
 cabal test
 
 # Generate Debug Verilog
 make compile-clash
 
-# Run Verilator Tests
+# Run Verilator Tests.
 make vtest
 ```

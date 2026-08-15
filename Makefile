@@ -24,11 +24,14 @@ VERILATOR_SOURCES = $(wildcard $(VERILOG_SOURCEDIR)/*.v)
 paths:
 	mkdir -p $(BUILDDIR)
 
+# Compiles Clash CPU model to verilog code with debug outputs.
 compile-clash:
 	@cabal run clash DebugTopLevel -- --verilog
 
+# Compiles Clash to verilog and compiles tests using verilator.
 all: compile-clash only-tests
 
+# Re-compiles the verilator tests.
 only-tests: paths
 	@mkdir -p $(BUILDDIR)
 	$(VERILATOR) --top-module topEntity --Mdir $(BUILDDIR) \
@@ -36,14 +39,18 @@ only-tests: paths
 	  $(VERILATOR_SOURCES) \
 	  $(ALL_SOURCES)
 
+# Runs Clash property tests.
 test-prop:
 	cabal test
 
+# Runs verilator tests.
 vtest: only-tests
 	$(BUILDDIR)/VtopEntity
 
+# Runs all available tests.
 test: test-prop vtest
 
+# Build everything and run all tests.
 full: compile-clash test
 
 clean:

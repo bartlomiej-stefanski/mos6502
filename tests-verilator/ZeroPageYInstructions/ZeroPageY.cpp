@@ -4,6 +4,7 @@
 
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
+#include "MemoryArea.hpp"
 
 constexpr Addr program_start{0x8090};
 
@@ -16,10 +17,10 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO(program_start)}
-      )
+      ))
     });
 
     std::vector< u8 > zero_page_data;
@@ -29,10 +30,10 @@ protected:
 
     memory_maps.insert({
       0x1,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Zero Page",
         std::move(zero_page_data)
-      )
+      ))
     });
 
     std::vector< u8 > one_page_data;
@@ -42,10 +43,10 @@ protected:
 
     memory_maps.insert({
       0x100,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Zero Page",
         std::move(one_page_data)
-      )
+      ))
     });
   }
 
@@ -58,14 +59,14 @@ protected:
 
     memory_maps.insert({
       program_start,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::zero_page(ZeroPageOpcodes::LDA, 256 - lda_addr),
           Instruction::zero_page(ZeroPageOpcodes::LDX, 256 - ldx_addr),
           Instruction::zero_page(ZeroPageOpcodes::LDY, 256 - ldy_addr),
         }
-      )
+      ))
     });
 
     reset_to_entry();
@@ -87,13 +88,13 @@ TEST_F(ZeroPageYInstructions, LoadRegisterTests)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageYOpcodes::LDX, 256 - ldx_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -120,13 +121,13 @@ TEST_F(ZeroPageYInstructions, StoreRegisterTests)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageYOpcodes::STX, stx_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();

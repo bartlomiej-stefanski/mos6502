@@ -4,6 +4,7 @@
 
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
+#include "MemoryArea.hpp"
 
 constexpr Addr program_start{0x8090};
 
@@ -19,10 +20,10 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO(program_start)}
-      )
+      ))
     });
 
     std::vector< u8 > romData;
@@ -32,18 +33,18 @@ protected:
 
     memory_maps.insert({
       MemoryPage,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Zero Page",
         std::move(romData)
-      )
+      ))
     });
 
     memory_maps.insert({
       RamAddr,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "RAM",
         std::vector< u8 >(512)
-      )
+      ))
     });
 
     std::vector< MemoryOccupant > pointers;
@@ -52,10 +53,10 @@ protected:
 
     memory_maps.insert({
       PointerTable,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Pointer Table",
         std::move(pointers)
-      )
+      ))
     });
   }
 
@@ -68,14 +69,14 @@ protected:
 
     memory_maps.insert({
       program_start,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::absolute(AbsoluteOpcodes::LDA, MemoryPage + lda_val),
           Instruction::absolute(AbsoluteOpcodes::LDX, MemoryPage + ldx_val),
           Instruction::absolute(AbsoluteOpcodes::LDY, MemoryPage + ldy_val),
         }
-      )
+      ))
     });
 
     reset_to_entry();
@@ -97,13 +98,13 @@ TEST_F(IndirectXInstructions, LoadRegisterTests)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::indirect(IndirectXOpcodes::LDA, PointerTable + lda_val * 2),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -148,13 +149,13 @@ TEST_F(IndirectXInstructions, StoreRegisterTests)
 {
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::indirect(IndirectXOpcodes::STA, PointerTable),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -205,7 +206,7 @@ TEST_F(IndirectXInstructions, BitOpsTest)
 {
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::indirect(IndirectXOpcodes::ORA, PointerTable),
@@ -213,7 +214,7 @@ TEST_F(IndirectXInstructions, BitOpsTest)
         Instruction::indirect(IndirectXOpcodes::EOR, PointerTable),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -247,14 +248,14 @@ TEST_F(IndirectXInstructions, AddSbcTest)
 {
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::indirect(IndirectXOpcodes::ADC, PointerTable),
         Instruction::indirect(IndirectXOpcodes::SBC, PointerTable),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -282,13 +283,13 @@ TEST_F(IndirectXInstructions, CmpTest)
 {
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::indirect(IndirectXOpcodes::CMP, PointerTable),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();

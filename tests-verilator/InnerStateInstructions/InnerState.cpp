@@ -4,6 +4,7 @@
 
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
+#include "MemoryArea.hpp"
 
 constexpr Addr program_start{0x8090};
 
@@ -22,22 +23,22 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO((Addr)(program_start - 6))}
-      )
+      ))
     });
 
     memory_maps.insert({
       program_start - 6,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::immediate(ImmediateOpcodes::LDA, lda_data),
           Instruction::immediate(ImmediateOpcodes::LDX, ldx_data),
           Instruction::immediate(ImmediateOpcodes::LDY, ldy_data),
         }
-      )
+      ))
     });
   }
 
@@ -61,14 +62,14 @@ TEST_F(InnerStateInstructions, CarryFlagOperations)
 {
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::inner(InnerStateOpcodes::SEC),
         Instruction::inner(InnerStateOpcodes::CLC),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -92,14 +93,14 @@ TEST_F(InnerStateInstructions, InterruptFlagOperations)
 {
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::inner(InnerStateOpcodes::SEI),
         Instruction::inner(InnerStateOpcodes::CLI),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -121,14 +122,14 @@ TEST_F(InnerStateInstructions, DecimalFlagOperations)
 {
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::inner(InnerStateOpcodes::SED),
         Instruction::inner(InnerStateOpcodes::CLD),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -150,14 +151,14 @@ TEST_F(InnerStateInstructions, OverflowFlagOperations)
 {
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::ADC, lda_add),
         Instruction::inner(InnerStateOpcodes::CLV),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -180,7 +181,7 @@ TEST_F(InnerStateInstructions, IncrementOperators)
 {
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::inner(InnerStateOpcodes::INY),
@@ -189,7 +190,7 @@ TEST_F(InnerStateInstructions, IncrementOperators)
         Instruction::inner(InnerStateOpcodes::DEX),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -223,7 +224,7 @@ TEST_F(InnerStateInstructions, TransferOperators)
 {
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::inner(InnerStateOpcodes::TYA),
@@ -234,7 +235,7 @@ TEST_F(InnerStateInstructions, TransferOperators)
         Instruction::inner(InnerStateOpcodes::TAY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   LoadRegisters();

@@ -3,7 +3,7 @@
 #include <VtopEntity.h>
 
 #include "CpuTest.hpp"
-#include "Instructions.hpp"
+#include "MemoryArea.hpp"
 
 constexpr Addr program_start{0x8090};
 
@@ -16,10 +16,10 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO(program_start)}
-      )
+      ))
     });
   }
 };
@@ -32,7 +32,7 @@ TEST_F(ImmediateInstructions, LoadRegisterTests)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, lda_data),
@@ -40,7 +40,7 @@ TEST_F(ImmediateInstructions, LoadRegisterTests)
         Instruction::immediate(ImmediateOpcodes::LDY, ldy_data),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -93,7 +93,7 @@ TEST_F(ImmediateInstructions, AdditionTests)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, lda_data),
@@ -102,7 +102,7 @@ TEST_F(ImmediateInstructions, AdditionTests)
         Instruction::immediate(ImmediateOpcodes::ADC, 0),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -162,7 +162,7 @@ TEST_F(ImmediateInstructions, SubtractionTests)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, lda_data),
@@ -171,7 +171,7 @@ TEST_F(ImmediateInstructions, SubtractionTests)
         Instruction::immediate(ImmediateOpcodes::SBC, 0),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -232,7 +232,7 @@ TEST_F(ImmediateInstructions, BinaryOpTest)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, lda_data),
@@ -241,7 +241,7 @@ TEST_F(ImmediateInstructions, BinaryOpTest)
         Instruction::immediate(ImmediateOpcodes::EOR, imm3),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -310,7 +310,7 @@ TEST_F(ImmediateInstructions, CompareInstructions)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, lda_data),
@@ -321,7 +321,7 @@ TEST_F(ImmediateInstructions, CompareInstructions)
         Instruction::immediate(ImmediateOpcodes::CPY, ldy_data),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   reset_to_entry();

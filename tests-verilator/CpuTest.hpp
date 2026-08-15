@@ -3,13 +3,12 @@
 #include <stdexcept>
 #include <optional>
 #include <map>
-#include <variant>
 
 #include <gtest/gtest.h>
 
 #include <VtopEntity.h>
 
-#include "Instructions.hpp"
+#include "MemoryArea.hpp"
 
 constexpr Addr NmiVector{0xFFFC};
 constexpr Addr ResetVector{0xFFFC};
@@ -17,8 +16,6 @@ constexpr Addr InterruptVector{0xFFFC};
 
 constexpr Addr StackStart{0x100};
 
-using MemoryOccupant = std::variant< Addr, u8, Instruction >;
-using MO = MemoryOccupant;
 
 struct UnmappedMemory : std::runtime_error
 {
@@ -31,18 +28,9 @@ struct UnmappedMemory : std::runtime_error
 class CpuTest : public ::testing::Test
 {
 protected:
-  struct MemoryLayer : std::vector< u8 >
-  {
-    MemoryLayer(const std::string name, std::vector< MemoryOccupant >&& data);
-    MemoryLayer(const std::string name, std::vector< u8 >&& data);
-    MemoryLayer(const std::string name, std::vector< Instruction >&& data);
-
-    std::string name;
-  };
-
   VtopEntity* cpu{nullptr};
 
-  std::map< Addr, MemoryLayer > memory_maps;
+  std::map< Addr, std::unique_ptr< MemoryArea > > memory_maps;
 
   virtual void SetUpMemory();
   void SetUp() override;

@@ -3,6 +3,7 @@
 #include <VtopEntity.h>
 
 #include "CpuTest.hpp"
+#include "MemoryArea.hpp"
 
 TEST(SanityCheck, AmISane)
 {
@@ -21,18 +22,18 @@ protected:
 
     memory_maps.insert({
       MagicAddressOne,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Sequence one",
         {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-      )
+      ))
     });
 
     memory_maps.insert({
       MagicAddressTwo,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Sequence two",
         {90, 89, 88, 87, 86, 85, 84, 83, 82, 81}
-      )
+      ))
     });
   }
 };

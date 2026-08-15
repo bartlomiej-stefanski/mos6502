@@ -4,6 +4,7 @@
 
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
+#include "MemoryArea.hpp"
 
 constexpr Addr program_start{0x8090};
 
@@ -16,10 +17,10 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO(program_start)}
-      )
+      ))
     });
   }
 };
@@ -31,7 +32,7 @@ TEST_F(Counter, ShouldCountOnMemory)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::absolute(AbsoluteOpcodes::INC, NumAddr),
@@ -58,23 +59,23 @@ TEST_F(Counter, ShouldCountOnMemory)
 
         Instruction::jumpAbsolute(program_start)
       }
-    )
+    ))
   });
 
   memory_maps.insert({
     0x01,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "First Page",
       std::vector< u8 >(1024)
-    )
+    ))
   });
 
   memory_maps.insert({
     SwitchAddr,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Switches",
       std::vector< u8 >{0xF0}
-    )
+    ))
   });
 
   reset_to_entry();

@@ -4,6 +4,7 @@
 
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
+#include "MemoryArea.hpp"
 
 class BranchInstructions : public CpuTest
 {
@@ -18,34 +19,34 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO((Addr)(program_start))}
-      )
+      ))
     });
 
     memory_maps.insert({
       program_a,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::inner(InnerStateOpcodes::INX),
           Instruction::nop(),
           Instruction::nop(),
         }
-      )
+      ))
     });
 
     memory_maps.insert({
       program_b,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::inner(InnerStateOpcodes::DEX),
           Instruction::nop(),
           Instruction::nop(),
         }
-      )
+      ))
     });
   }
 };
@@ -109,7 +110,7 @@ TEST_F(BranchInstructions, TakeBPL)
   constexpr u8 reg_a{0x10};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -117,7 +118,7 @@ TEST_F(BranchInstructions, TakeBPL)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -135,14 +136,14 @@ TEST_F(BranchInstructions, TakeBackwardBPL)
   constexpr u8 reg_a{0x10};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
         Instruction::branch(BranchOpcodes::BPL, program_b - (program_start + 4)),
         Instruction::inner(InnerStateOpcodes::INY),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -160,7 +161,7 @@ TEST_F(BranchInstructions, SkipBPL)
   constexpr u8 reg_a{0xFF};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -168,7 +169,7 @@ TEST_F(BranchInstructions, SkipBPL)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -186,7 +187,7 @@ TEST_F(BranchInstructions, SkipBMI)
   constexpr u8 reg_a{0x10};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -194,7 +195,7 @@ TEST_F(BranchInstructions, SkipBMI)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -212,7 +213,7 @@ TEST_F(BranchInstructions, TakeBMI)
   constexpr u8 reg_a{0xFF};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -220,7 +221,7 @@ TEST_F(BranchInstructions, TakeBMI)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -238,7 +239,7 @@ TEST_F(BranchInstructions, TakeBackwardBMI)
   constexpr u8 reg_a{0xFF};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -246,7 +247,7 @@ TEST_F(BranchInstructions, TakeBackwardBMI)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -264,7 +265,7 @@ TEST_F(BranchInstructions, TakeBNE)
   constexpr u8 reg_a{0x10};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -272,7 +273,7 @@ TEST_F(BranchInstructions, TakeBNE)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -290,7 +291,7 @@ TEST_F(BranchInstructions, SkipBNE)
   constexpr u8 reg_a{0x0};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -298,7 +299,7 @@ TEST_F(BranchInstructions, SkipBNE)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -316,7 +317,7 @@ TEST_F(BranchInstructions, SkipBEQ)
   constexpr u8 reg_a{0x10};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -324,7 +325,7 @@ TEST_F(BranchInstructions, SkipBEQ)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -342,7 +343,7 @@ TEST_F(BranchInstructions, TakeBEQ)
   constexpr u8 reg_a{0x0};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -350,7 +351,7 @@ TEST_F(BranchInstructions, TakeBEQ)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -368,7 +369,7 @@ TEST_F(BranchInstructions, TakeBVC)
   constexpr u8 reg_a{0x0};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -376,7 +377,7 @@ TEST_F(BranchInstructions, TakeBVC)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -394,7 +395,7 @@ TEST_F(BranchInstructions, SkipBVS)
   constexpr u8 reg_a{0x10};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -402,7 +403,7 @@ TEST_F(BranchInstructions, SkipBVS)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -420,7 +421,7 @@ TEST_F(BranchInstructions, TakeBCC)
   constexpr u8 reg_a{0x0};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -428,7 +429,7 @@ TEST_F(BranchInstructions, TakeBCC)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -446,7 +447,7 @@ TEST_F(BranchInstructions, SkipBCS)
   constexpr u8 reg_a{0x10};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, reg_a),
@@ -454,7 +455,7 @@ TEST_F(BranchInstructions, SkipBCS)
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -471,14 +472,14 @@ TEST_F(BranchInstructions, JumpAbsolute)
 {
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::jumpAbsolute(program_a),
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -503,22 +504,22 @@ TEST_F(BranchInstructions, JumpIndirect)
   constexpr Addr JumpTable{0x2000};
   memory_maps.insert({
     JumpTable,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Jump Table",
       {MO((Addr)(program_b))}
-    )
+    ))
   });
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::jumpIndirect(JumpTable),
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();

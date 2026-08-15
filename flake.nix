@@ -46,6 +46,7 @@
           gcc
           pkg-config
           gtest
+          cc65
 
           verilator
         ];

@@ -5,6 +5,7 @@
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
 #include "BitHelper.hpp"
+#include "MemoryArea.hpp"
 
 constexpr Addr program_start{0x8090};
 
@@ -17,10 +18,10 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO(program_start)}
-      )
+      ))
     });
 
     std::vector< u8 > zero_page_data;
@@ -30,10 +31,10 @@ protected:
 
     memory_maps.insert({
       0x1,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Zero Page",
         std::move(zero_page_data)
-      )
+      ))
     });
   }
 
@@ -46,14 +47,14 @@ protected:
 
     memory_maps.insert({
       program_start,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::zero_page(ZeroPageOpcodes::LDA, 256 - lda_addr),
           Instruction::zero_page(ZeroPageOpcodes::LDX, 256 - ldx_addr),
           Instruction::zero_page(ZeroPageOpcodes::LDY, 256 - ldy_addr),
         }
-      )
+      ))
     });
 
     reset_to_entry();
@@ -77,7 +78,7 @@ TEST_F(ZeroPageInstructions, LoadRegisterTests)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageOpcodes::LDA, 256 - lda_addr),
@@ -85,7 +86,7 @@ TEST_F(ZeroPageInstructions, LoadRegisterTests)
         Instruction::zero_page(ZeroPageOpcodes::LDY, 256 - ldy_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -132,7 +133,7 @@ TEST_F(ZeroPageInstructions, StoreRegisterTests)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageOpcodes::STX, stx_addr),
@@ -140,7 +141,7 @@ TEST_F(ZeroPageInstructions, StoreRegisterTests)
         Instruction::zero_page(ZeroPageOpcodes::STA, sta_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -192,14 +193,14 @@ TEST_F(ZeroPageInstructions, BitTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageOpcodes::BIT, 256 - bit1_addr),
         Instruction::zero_page(ZeroPageOpcodes::BIT, 256 - bit2_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -241,7 +242,7 @@ TEST_F(ZeroPageInstructions, BitOpsTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageOpcodes::ORA, 256 - or_addr),
@@ -249,7 +250,7 @@ TEST_F(ZeroPageInstructions, BitOpsTest)
         Instruction::zero_page(ZeroPageOpcodes::EOR, 256 - xor_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -289,14 +290,14 @@ TEST_F(ZeroPageInstructions, AddSbcTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageOpcodes::ADC, 256 - adc_addr),
         Instruction::zero_page(ZeroPageOpcodes::SBC, 256 - sbc_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -329,14 +330,14 @@ TEST_F(ZeroPageInstructions, IncDecTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageOpcodes::INC, 256 - inc_addr),
         Instruction::zero_page(ZeroPageOpcodes::DEC, 256 - dec_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -378,7 +379,7 @@ TEST_F(ZeroPageInstructions, ShiftOpTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageOpcodes::ASL, 256 - asl_addr),
@@ -387,7 +388,7 @@ TEST_F(ZeroPageInstructions, ShiftOpTest)
         Instruction::zero_page(ZeroPageOpcodes::ROR, 256 - ror_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -444,7 +445,7 @@ TEST_F(ZeroPageInstructions, CmpTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageOpcodes::CMP, 256 - cmp_addr),
@@ -452,7 +453,7 @@ TEST_F(ZeroPageInstructions, CmpTest)
         Instruction::zero_page(ZeroPageOpcodes::CPY, 256 - cpy_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();

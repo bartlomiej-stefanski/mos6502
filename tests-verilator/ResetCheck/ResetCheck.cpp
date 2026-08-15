@@ -3,7 +3,7 @@
 #include <VtopEntity.h>
 
 #include "CpuTest.hpp"
-#include "Instructions.hpp"
+#include "MemoryArea.hpp"
 
 constexpr Addr program_start{0x8090};
 
@@ -16,22 +16,22 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO(program_start)}
-      )
+      ))
     });
 
     memory_maps.insert({
       program_start,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::nop(),
           Instruction::nop(),
           Instruction::nop()
         }
-      )
+      ))
     });
   }
 };

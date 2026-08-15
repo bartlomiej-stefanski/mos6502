@@ -4,6 +4,7 @@
 
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
+#include "MemoryArea.hpp"
 
 class StackInstructions : public CpuTest
 {
@@ -18,34 +19,34 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO((Addr)(program_start))}
-      )
+      ))
     });
 
     memory_maps.insert({
       program_a,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::inner(InnerStateOpcodes::INX),
           Instruction::stack(StackOpcodes::RTS),
           Instruction::nop(),
         }
-      )
+      ))
     });
 
     memory_maps.insert({
       program_b,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::inner(InnerStateOpcodes::DEX),
           Instruction::stack(StackOpcodes::RTS),
           Instruction::nop(),
         }
-      )
+      ))
     });
   }
 };
@@ -54,13 +55,13 @@ TEST_F(StackInstructions, JumpUbroutineTest)
 {
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program",
       std::vector< Instruction >{
         Instruction::jumpSoubroutine(program_a),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -105,14 +106,14 @@ TEST_F(StackInstructions, JumpAndReturnSubroutineTest)
 {
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program",
       std::vector< Instruction >{
         Instruction::jumpSoubroutine(program_a),
         Instruction::inner(InnerStateOpcodes::INY),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -170,7 +171,7 @@ TEST_F(StackInstructions, PushPullRegA)
   constexpr u8 rega_val{123};
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program",
       std::vector< Instruction >{
         Instruction::immediate(ImmediateOpcodes::LDA, rega_val),
@@ -182,7 +183,7 @@ TEST_F(StackInstructions, PushPullRegA)
         Instruction::nop(),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -196,7 +197,7 @@ TEST_F(StackInstructions, PushPullStatus)
 {
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program",
       std::vector< Instruction >{
         Instruction::stack(StackOpcodes::PHP),
@@ -208,7 +209,7 @@ TEST_F(StackInstructions, PushPullStatus)
         Instruction::nop(),
         Instruction::nop(),
       }
-    )
+    ))
   });
 
   reset_to_entry();

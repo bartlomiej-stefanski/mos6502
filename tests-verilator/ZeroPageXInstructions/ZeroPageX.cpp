@@ -5,6 +5,7 @@
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
 #include "BitHelper.hpp"
+#include "MemoryArea.hpp"
 
 constexpr Addr program_start{0x8090};
 
@@ -17,10 +18,10 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO(program_start)}
-      )
+      ))
     });
 
     std::vector< u8 > zero_page_data;
@@ -30,10 +31,10 @@ protected:
 
     memory_maps.insert({
       0x1,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Zero Page",
         std::move(zero_page_data)
-      )
+      ))
     });
 
     std::vector< u8 > one_page_data;
@@ -43,10 +44,10 @@ protected:
 
     memory_maps.insert({
       0x100,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Zero Page",
         std::move(one_page_data)
-      )
+      ))
     });
   }
 
@@ -59,14 +60,14 @@ protected:
 
     memory_maps.insert({
       program_start,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::zero_page(ZeroPageOpcodes::LDA, 256 - lda_addr),
           Instruction::zero_page(ZeroPageOpcodes::LDX, 256 - ldx_addr),
           Instruction::zero_page(ZeroPageOpcodes::LDY, 256 - ldy_addr),
         }
-      )
+      ))
     });
 
     reset_to_entry();
@@ -89,14 +90,14 @@ TEST_F(ZeroPageXInstructions, LoadRegisterTests)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageXOpcodes::LDA, 256 - lda_addr),
         Instruction::zero_page(ZeroPageXOpcodes::LDY, 256 - ldy_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -132,14 +133,14 @@ TEST_F(ZeroPageXInstructions, StoreRegisterTests)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageXOpcodes::STY, sty_addr),
         Instruction::zero_page(ZeroPageXOpcodes::STA, sta_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -182,7 +183,7 @@ TEST_F(ZeroPageXInstructions, BitOpsTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageXOpcodes::ORA, 256 - or_addr),
@@ -190,7 +191,7 @@ TEST_F(ZeroPageXInstructions, BitOpsTest)
         Instruction::zero_page(ZeroPageXOpcodes::EOR, 256 - xor_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -228,14 +229,14 @@ TEST_F(ZeroPageXInstructions, AddSbcTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageXOpcodes::ADC, 256 - adc_addr),
         Instruction::zero_page(ZeroPageXOpcodes::SBC, 256 - sbc_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -267,14 +268,14 @@ TEST_F(ZeroPageXInstructions, IncDecTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageXOpcodes::INC, 256 - inc_addr),
         Instruction::zero_page(ZeroPageXOpcodes::DEC, 256 - dec_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -316,7 +317,7 @@ TEST_F(ZeroPageXInstructions, ShiftOpTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageXOpcodes::ASL, 256 - asl_addr),
@@ -325,7 +326,7 @@ TEST_F(ZeroPageXInstructions, ShiftOpTest)
         Instruction::zero_page(ZeroPageXOpcodes::ROR, 256 - ror_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -381,13 +382,13 @@ TEST_F(ZeroPageXInstructions, CmpTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::zero_page(ZeroPageXOpcodes::CMP, 256 - cmp_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();

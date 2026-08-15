@@ -5,6 +5,7 @@
 #include "CpuTest.hpp"
 #include "Instructions.hpp"
 #include "BitHelper.hpp"
+#include "MemoryArea.hpp"
 
 constexpr Addr program_start{0x8090};
 
@@ -19,10 +20,10 @@ protected:
 
     memory_maps.insert({
       ResetVector,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "ResetVector",
         {MO(program_start)}
-      )
+      ))
     });
 
     std::vector< u8 > romData;
@@ -32,18 +33,18 @@ protected:
 
     memory_maps.insert({
       MemoryPage,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Zero Page",
         std::move(romData)
-      )
+      ))
     });
 
     memory_maps.insert({
       RamAddr,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "RAM",
         std::vector< u8 >(512)
-      )
+      ))
     });
   }
 
@@ -56,14 +57,14 @@ protected:
 
     memory_maps.insert({
       program_start,
-      MemoryLayer(
+      std::unique_ptr< MemoryArea >(new MemoryObject(
         "Program Memory",
         std::vector< Instruction >{
           Instruction::absolute(AbsoluteOpcodes::LDA, MemoryPage + lda_val),
           Instruction::absolute(AbsoluteOpcodes::LDX, MemoryPage + ldx_val),
           Instruction::absolute(AbsoluteOpcodes::LDY, MemoryPage + ldy_val),
         }
-      )
+      ))
     });
 
     reset_to_entry();
@@ -86,14 +87,14 @@ TEST_F(AbsoluteXInstructions, LoadRegisterTests)
 
   memory_maps.insert({
     program_start,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::absolute(AbsoluteXOpcodes::LDA, MemoryPage + lda_val),
         Instruction::absolute(AbsoluteXOpcodes::LDY, MemoryPage + ldy_val),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   reset_to_entry();
@@ -138,13 +139,13 @@ TEST_F(AbsoluteXInstructions, StoreRegisterTests)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::absolute(AbsoluteXOpcodes::STA, sta_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -185,7 +186,7 @@ TEST_F(AbsoluteXInstructions, BitOpsTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::absolute(AbsoluteXOpcodes::ORA, or_addr),
@@ -193,7 +194,7 @@ TEST_F(AbsoluteXInstructions, BitOpsTest)
         Instruction::absolute(AbsoluteXOpcodes::EOR, xor_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -230,14 +231,14 @@ TEST_F(AbsoluteXInstructions, AddSbcTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::absolute(AbsoluteXOpcodes::ADC, adc_addr),
         Instruction::absolute(AbsoluteXOpcodes::SBC, sbc_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -267,13 +268,13 @@ TEST_F(AbsoluteXInstructions, CmpTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::absolute(AbsoluteXOpcodes::CMP, cmp_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -309,7 +310,7 @@ TEST_F(AbsoluteXInstructions, ShiftOpTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::absolute(AbsoluteXOpcodes::ASL, asl_addr),
@@ -318,7 +319,7 @@ TEST_F(AbsoluteXInstructions, ShiftOpTest)
         Instruction::absolute(AbsoluteXOpcodes::ROR, ror_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();
@@ -381,14 +382,14 @@ TEST_F(AbsoluteXInstructions, IncDecTest)
 
   memory_maps.insert({
     TestProgramStart,
-    MemoryLayer(
+    std::unique_ptr< MemoryArea >(new MemoryObject(
       "Program Memory",
       std::vector< Instruction >{
         Instruction::absolute(AbsoluteXOpcodes::INC, inc_addr),
         Instruction::absolute(AbsoluteXOpcodes::DEC, dec_addr),
         Instruction::nop()
       }
-    )
+    ))
   });
 
   LoadRegisters();

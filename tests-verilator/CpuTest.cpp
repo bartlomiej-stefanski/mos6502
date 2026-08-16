@@ -21,8 +21,8 @@ void CpuTest::SetUpMemory()
   memory_maps.insert({
     0,
     std::unique_ptr< MemoryArea >(new MemoryObject(
-      "Zero-byte",
-      std::vector< u8 >(1)
+      "Zero-page",
+      std::vector< u8 >(0x100)
     ))
   });
 }

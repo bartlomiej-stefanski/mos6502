@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 #include "MemoryArea.hpp"
+#include "Logger.hpp"
 
 MemoryObject::MemoryObject(const std::string& name, std::vector< MemoryOccupant >&& data)
   : MemoryArea(name)
@@ -97,6 +98,8 @@ void MemoryMappedBinary::map_file_to_memory(int fd)
   if (file_offset > file_size) {
     throw std::runtime_error(std::format("MemoryMappedBinary: offset {} is beyond file size {}.", file_offset, file_size));
   }
+
+  INFO("Loaded file '{}' with size: 0x{:x}", name, file_size);
 
   file_mapping = static_cast< u8* >(mmap(
     nullptr,

@@ -60,12 +60,12 @@ u8& CpuTest::get_memory(const Addr addr, const bool is_write)
     }
   }
 
-  const auto message{std::format("Memory not mapped at address {}.", addr)};
+  const auto message{std::format("Memory not mapped at address 0x{:x}.", addr)};
   if (is_write) {
     throw UnmappedMemory(message);
   }
   else {
-    WARNING("%s", message);
+    WARNING("{}", message);
     static u8 zero = 0;
     return zero = 0;
   }
@@ -101,9 +101,11 @@ void CpuTest::tick()
 
   if (mem_w) {
     mem = cpu->MEM_W_DATA;
+    NOISY("Writing 0x{:#02x} to Address 0x{:#04x}", cpu->MEM_W_DATA, mem_query);
   }
   else {
     cpu->MEM_DATA_IN = mem;
+    NOISY("Reading 0x{:#02x} from Address 0x{:#04x}", mem, mem_query);
   }
 
   cpu->eval();

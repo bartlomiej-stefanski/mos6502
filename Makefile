@@ -4,13 +4,15 @@ VERILATOR = verilator
 SOURCEDIR := $(abspath tests-verilator)
 ALL_SOURCES := $(shell find $(SOURCEDIR) -name "*.cpp")
 
+ROM_BINARIES_DIR = $(abspath programs/.build/apps)
+
 VERILOG_SOURCEDIR := $(abspath verilog/DebugTopLevel.topEntity)
 BUILDDIR = $(abspath .build)
 
 GTEST_CFLAGS := $(shell pkg-config --cflags gtest)
 GTEST_LIBS := $(shell pkg-config --libs gtest)
 
-CXXFLAGS := -std=c++23 -Wall -Wextra -I$(SOURCEDIR) $(GTEST_CFLAGS)
+CXXFLAGS := -std=c++23 -Wall -Wextra -I$(SOURCEDIR) $(GTEST_CFLAGS) -DROM_BINARIES_DIR='\"$(ROM_BINARIES_DIR)\"'
 LDFLAGS := $(GTEST_LIBS)
 
 VERILATOR_IGNORE_CLASH_WARNINGS = -Wno-WIDTH -Wno-CASEINCOMPLETE -Wno-UNOPTFLAT
@@ -18,7 +20,7 @@ VERILATOR_FLAGS := $(VERILATOR_IGNORE_CLASH_WARNINGS) -j $(shell nproc) -CFLAGS 
 
 VERILATOR_SOURCES = $(wildcard $(VERILOG_SOURCEDIR)/*.v)
 
-.PHONY: run clean compile-clash test-prop vtest test full
+.PHONY: run clean compile-clash test-prop vtest test full programs
 .DEFAULT_GOAL := all
 
 paths:
@@ -31,8 +33,11 @@ compile-clash:
 # Compiles Clash to verilog and compiles tests using verilator.
 all: compile-clash only-tests
 
+programs:
+	@make -C programs all
+
 # Re-compiles the verilator tests.
-only-tests: paths
+only-tests: paths programs
 	@mkdir -p $(BUILDDIR)
 	$(VERILATOR) --top-module topEntity --Mdir $(BUILDDIR) \
 	  $(VERILATOR_FLAGS) -I$(SOURCEDIR) --cc --build --exe \

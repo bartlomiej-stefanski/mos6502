@@ -30,5 +30,8 @@ jobs:
       - name: Compile Clash to Verilog
         run: nix develop .#ci --command make compile-clash
 
+      - name: Compile MOS6502 programs
+        run: nix develop .#ci --command make programs
+
       - name: Run Verilator Simulation
         run: nix develop .#ci --command make vtest

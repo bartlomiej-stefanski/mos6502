@@ -33,7 +33,7 @@ protected:
     memory_maps.insert({
       MemoryPage,
       std::unique_ptr< MemoryArea >(new MemoryObject(
-        "Zero Page",
+        "Custom Memory",
         std::move(romData)
       ))
     });

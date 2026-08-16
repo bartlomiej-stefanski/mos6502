@@ -155,10 +155,8 @@ microcodeGenerator (instruction, addressingMode) =
         ]
       Indirect XRegOffset ->
         [ -- placeImmediatOnBus,
-          placeImmediatOnBus . readFromBus DATA_READ,
-          -- Load the low-byte of the addreess, requested address will be latched on bus.
-          -- Use the value in X register as offset pre-indexing.
-          placeDataOnBus DATA_LATCH_AND_BUS REGX,
+          -- Request address located on zero-page with X offset.
+          placeDataOnBus BUS_VALUE REGX,
           -- Load the high-byte of the address, requested address will be latched on bus.
           placeDataOnBus LAST_BUS_ADDRESS_PLUS_ONE NONE . readFromBus DATA_READ,
           -- Now we have low-byte latched and high-byte on bus, request the actual data.
@@ -166,9 +164,8 @@ microcodeGenerator (instruction, addressingMode) =
         ]
       Indirect YRegOffset ->
         [ -- placeImmediatOnBus,
-          placeImmediatOnBus . readFromBus DATA_READ,
-          -- Load the low-byte of the addreess, requested address will be latched on bus.
-          placeDataOnBus DATA_LATCH_AND_BUS NONE,
+          -- Request address located on the zero-page.
+          placeDataOnBus BUS_VALUE NONE,
           -- Load the high-byte of the address, requested address will be latched on bus.
           placeDataOnBus LAST_BUS_ADDRESS_PLUS_ONE NONE . readFromBus DATA_READ,
           -- Now we have low-byte latched and high-byte on bus, request the actual data.

@@ -69,6 +69,7 @@ alu op flags x y = (result, newFlags)
           _ -> False
 
     -- Use U2 properties (x - y = x + ~y + 1) for subtraction.
+    -- The (+1) is added via 'carry' flag to not produce additional sumator.
     addOperandY = case op of
       ALU_SUB _ -> complement y
       _ -> y

@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "Instructions.hpp"
 
 std::vector< u8 > Instruction::to_bytes() const
@@ -98,7 +100,11 @@ Instruction Instruction::indirect(IndirectXOpcodes opcode, Addr address)
   Instruction ins;
   ins.data.emplace_back((u8)opcode);
   ins.data.emplace_back((u8)(address & 0xFF));
-  ins.data.emplace_back((u8)((address >> 8) & 0xFF));
+  if (address >> 8)
+  {
+    throw std::runtime_error("Indirect X instruction address must point to the zero-page.");
+  }
+
   return ins;
 }
 
@@ -107,7 +113,11 @@ Instruction Instruction::indirect(IndirectYOpcodes opcode, Addr address)
   Instruction ins;
   ins.data.emplace_back((u8)opcode);
   ins.data.emplace_back((u8)(address & 0xFF));
-  ins.data.emplace_back((u8)((address >> 8) & 0xFF));
+  if (address >> 8)
+  {
+    throw std::runtime_error("Indirect Y instruction address must point to the zero-page.");
+  }
+
   return ins;
 }
 

@@ -12,7 +12,7 @@ class IndirectXInstructions : public CpuTest
 {
 protected:
   inline static constexpr Addr MemoryPage{0xa000};
-  inline static constexpr Addr PointerTable{0xd000};
+  inline static constexpr Addr PointerTable{0x0020};
   inline static constexpr Addr RamAddr{0x2000};
   void SetUpMemory() override
   {
@@ -48,23 +48,19 @@ protected:
     });
 
     std::vector< MemoryOccupant > pointers;
-    for (u16 i = 0; i < 0x50; i++)
+    for (u16 i = 0; i < 0x40; i++)
       pointers.push_back(MO((Addr)(MemoryPage + i)));
 
-    memory_maps.insert({
-      PointerTable,
-      std::unique_ptr< MemoryArea >(new MemoryObject(
-        "Pointer Table",
-        std::move(pointers)
-      ))
-    });
+    auto pointer_object = MemoryObject("Pointer Table", std::move(pointers));
+    for (size_t i = 0; i < pointer_object.size(); i++)
+      get_memory(PointerTable + i, true) = pointer_object.at(i);
   }
 
   inline static constexpr Addr TestProgramStart{program_start + 9};
   void LoadRegisters()
   {
     constexpr u8 lda_val{0xC2};
-    constexpr u8 ldx_val{0x22};
+    constexpr u8 ldx_val{0x12};
     constexpr u8 ldy_val{0x37};
 
     memory_maps.insert({
@@ -94,7 +90,7 @@ protected:
 
 TEST_F(IndirectXInstructions, LoadRegisterTests)
 {
-  constexpr u8 lda_val{0x42};
+  constexpr u8 lda_val{0x4};
 
   memory_maps.insert({
     program_start,
@@ -108,27 +104,20 @@ TEST_F(IndirectXInstructions, LoadRegisterTests)
   });
 
   reset_to_entry();
-  ASSERT_EQ(cpu->PC, program_start + 3); // LDX instruction, load indirect low
+  ASSERT_EQ(cpu->PC, program_start + 2); // LDX instruction, load indirect low
 
-  {
-    SCOPED_TRACE("LDA load indirect-addr high");
-    expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(program_start + 2);
-  }
-
-  tick();
-  const Addr load_a_addr = lda_val * 2 + *prev_state.x;
+  const Addr load_addr = lda_val * 2 + *prev_state.x;
   {
     SCOPED_TRACE("LDA load addr low");
     expect_regs_change({});
-    expect_bus_read(PointerTable + load_a_addr);
+    expect_bus_read(PointerTable + load_addr);
   }
 
   tick();
   {
     SCOPED_TRACE("LDA load addr high");
     expect_regs_change({});
-    expect_bus_read(PointerTable + load_a_addr + 1);
+    expect_bus_read(PointerTable + load_addr + 1);
   }
 
   tick();
@@ -161,16 +150,9 @@ TEST_F(IndirectXInstructions, StoreRegisterTests)
   LoadRegisters();
 
   {
-    SCOPED_TRACE("STA load indirect-addr low");
+    SCOPED_TRACE("STA load zero-page offset");
     expect_regs_change({.pc = NEXT_PC});
     expect_bus_read(TestProgramStart + 1);
-  }
-
-  tick();
-  {
-    SCOPED_TRACE("STA load indirect-addr high");
-    expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(TestProgramStart + 2);
   }
 
   tick();
@@ -198,7 +180,7 @@ TEST_F(IndirectXInstructions, StoreRegisterTests)
   {
     SCOPED_TRACE("STA read next opcode");
     expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(TestProgramStart + 3);
+    expect_bus_read(TestProgramStart + 2);
   }
 }
 
@@ -225,19 +207,19 @@ TEST_F(IndirectXInstructions, BitOpsTest)
     expect_bus_read(TestProgramStart + 1);
   }
 
-  tick(5);
+  tick(4);
   {
     SCOPED_TRACE("ORA perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a | (*prev_state.x / 2)});
   }
 
-  tick(6);
+  tick(5);
   {
     SCOPED_TRACE("AND perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a & (*prev_state.x / 2)});
   }
 
-  tick(6);
+  tick(5);
   {
     SCOPED_TRACE("EOR perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a ^ (*prev_state.x / 2)});
@@ -266,13 +248,13 @@ TEST_F(IndirectXInstructions, AddSbcTest)
     expect_bus_read(TestProgramStart + 1);
   }
 
-  tick(5);
+  tick(4);
   {
     SCOPED_TRACE("ADC perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a + (*prev_state.x / 2)});
   }
 
-  tick(6);
+  tick(5);
   {
     SCOPED_TRACE("SBC perform op");
     expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a - (*prev_state.x / 2) - !*prev_flags.carry});
@@ -295,16 +277,19 @@ TEST_F(IndirectXInstructions, CmpTest)
   LoadRegisters();
 
   {
-    SCOPED_TRACE("CMP load addr low");
+    SCOPED_TRACE("CMP load zero-page offset");
     expect_regs_change({.pc = NEXT_PC});
     expect_bus_read(TestProgramStart + 1);
   }
 
+  // Load address from zero-page.
+  tick(2);
+
   tick();
   {
-    SCOPED_TRACE("CMP load addr high");
-    expect_regs_change({.pc = NEXT_PC});
-    expect_bus_read(TestProgramStart + 2);
+    SCOPED_TRACE("CMP load value pointed by zero-page addr");
+    expect_regs_change({});
+    expect_bus_read(MemoryPage + (*prev_state.x / 2));
   }
 
   tick(2);

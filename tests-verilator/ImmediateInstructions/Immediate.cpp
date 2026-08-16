@@ -3,6 +3,7 @@
 #include <VtopEntity.h>
 
 #include "CpuTest.hpp"
+#include "Instructions.hpp"
 #include "MemoryArea.hpp"
 
 constexpr Addr program_start{0x8090};
@@ -304,7 +305,7 @@ TEST_F(ImmediateInstructions, BinaryOpTest)
 
 TEST_F(ImmediateInstructions, CompareInstructions)
 {
-  const u8 lda_data{0x42};
+  const u8 lda_data{0x06};
   const u8 ldx_data{0x21};
   const u8 ldy_data{0x37};
 
@@ -317,6 +318,7 @@ TEST_F(ImmediateInstructions, CompareInstructions)
         Instruction::immediate(ImmediateOpcodes::LDX, ldx_data),
         Instruction::immediate(ImmediateOpcodes::LDY, ldy_data),
         Instruction::immediate(ImmediateOpcodes::CMP, lda_data - 5),
+        Instruction::immediate(ImmediateOpcodes::CMP, lda_data + 4),
         Instruction::immediate(ImmediateOpcodes::CPX, ldx_data + 5),
         Instruction::immediate(ImmediateOpcodes::CPY, ldy_data),
         Instruction::nop()
@@ -334,7 +336,7 @@ TEST_F(ImmediateInstructions, CompareInstructions)
   tick();
 
   {
-    SCOPED_TRACE("CMP load immediate");
+    SCOPED_TRACE("CMP(lda_data - 5) load immediate");
     expect_regs_change({.pc = NEXT_PC});
     expect_flags_change({});
     expect_bus_read(program_start + 7);
@@ -343,16 +345,16 @@ TEST_F(ImmediateInstructions, CompareInstructions)
   tick();
 
   {
-    SCOPED_TRACE("CMP execute");
+    SCOPED_TRACE("CMP(lda_data - 5) execute");
     expect_regs_change({.pc = NEXT_PC});
-    expect_flags_change({.carry = true});
+    expect_flags_change({.carry = true, .negative = false});
     expect_bus_read(program_start + 8);
   }
 
-  tick(); // Decoding
+  tick();
 
   {
-    SCOPED_TRACE("CPX load immediate");
+    SCOPED_TRACE("CMP(lda_data + 4) load immediate");
     expect_regs_change({.pc = NEXT_PC});
     expect_flags_change({});
     expect_bus_read(program_start + 9);
@@ -361,7 +363,7 @@ TEST_F(ImmediateInstructions, CompareInstructions)
   tick();
 
   {
-    SCOPED_TRACE("CPX execute");
+    SCOPED_TRACE("CMP(lda_data + 4) execute");
     expect_regs_change({.pc = NEXT_PC});
     expect_flags_change({.carry = false, .negative = true});
     expect_bus_read(program_start + 10);
@@ -370,7 +372,7 @@ TEST_F(ImmediateInstructions, CompareInstructions)
   tick(); // Decoding
 
   {
-    SCOPED_TRACE("CPY load immediate");
+    SCOPED_TRACE("CPX load immediate");
     expect_regs_change({.pc = NEXT_PC});
     expect_flags_change({});
     expect_bus_read(program_start + 11);
@@ -379,9 +381,67 @@ TEST_F(ImmediateInstructions, CompareInstructions)
   tick();
 
   {
+    SCOPED_TRACE("CPX execute");
+    expect_regs_change({.pc = NEXT_PC});
+    expect_flags_change({.carry = false, .negative = true});
+    expect_bus_read(program_start + 12);
+  }
+
+  tick(); // Decoding
+
+  {
+    SCOPED_TRACE("CPY load immediate");
+    expect_regs_change({.pc = NEXT_PC});
+    expect_flags_change({});
+    expect_bus_read(program_start + 13);
+  }
+
+  tick();
+
+  {
     SCOPED_TRACE("CPY execute");
     expect_regs_change({.pc = NEXT_PC});
     expect_flags_change({.carry = true, .zero = true, .negative = false});
-    expect_bus_read(program_start + 12);
+    expect_bus_read(program_start + 14);
+  }
+}
+
+TEST_F(ImmediateInstructions, CC65SignedCompareSimulate)
+{
+  memory_maps.insert({
+    program_start,
+    std::unique_ptr< MemoryArea >(new MemoryObject(
+      "Program Memory",
+      std::vector< Instruction >{
+        Instruction::inner(InnerStateOpcodes::SEC),
+        Instruction::immediate(ImmediateOpcodes::LDA, 0x00),
+        Instruction::immediate(ImmediateOpcodes::SBC, 0x06),
+        Instruction::nop()
+      }
+    ))
+  });
+
+  reset_to_entry();
+
+  {
+    SCOPED_TRACE("After SEC");
+    expect_flags_change({.carry = true});
+  }
+
+  tick();
+
+  {
+    SCOPED_TRACE("After LOAD");
+    expect_regs_change({.pc = NEXT_PC, .a = 0});
+    expect_flags_change({.zero = true});
+  }
+
+  tick(2);
+
+  {
+    SCOPED_TRACE("After SBC");
+    EXPECT_EQ(cpu->REG_A, 0xFA);
+
+    expect_flags_change({.carry = false, .zero = false, .overflow = false, .negative = true});
   }
 }

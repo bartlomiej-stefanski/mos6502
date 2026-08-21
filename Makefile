@@ -60,3 +60,4 @@ full: compile-clash test
 
 clean:
 	rm -rf $(BUILDDIR) $(VERILOG_SOURCEDIR)
+	cabal clean

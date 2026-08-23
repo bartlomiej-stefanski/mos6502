@@ -66,6 +66,7 @@
 
           # C++ Dev
           clang-tools
+          ccache
           gdb
           clang-manpages
 
@@ -87,6 +88,8 @@
 
           default = pkgs.mkShell {
             packages = ciPackages ++ devPackages;
+
+            OBJCACHE = "ccache";
 
             shellHook = ''
               echo "Welcome to your CLASH Hardware development environment!"

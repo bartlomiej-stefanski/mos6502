@@ -1,7 +1,10 @@
+#include <fstream>
+#include <filesystem>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include <VtopEntity.h>
-#include <memory>
 
 #include "Mos6502.hpp"
 #include "Types.hpp"
@@ -16,6 +19,9 @@ class Hello : public Mos6502
 {
 public:
   Hello() {
+    std::filesystem::create_directories(ARTIFACT_DIR "/Hello");
+    log_output = std::ofstream(ARTIFACT_DIR "/Hello/cpu.trace", std::ios::out | std::ios::trunc);
+
     bus->insert_device(
       RomStart,
       std::unique_ptr< BusDevice >(new MemoryMappedBinary(
@@ -43,7 +49,7 @@ TEST_F(Hello, ShouldWriteHello)
 {
   reset_to_entry();
 
-  tick(5000); // Should be enough for C-runtime init and execution.
+  tick(2000); // Should be enough for C-runtime init and execution.
 
   static constexpr char hello_string[] = "hello";
 

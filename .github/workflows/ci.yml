@@ -35,3 +35,9 @@ jobs:
 
       - name: Run Verilator Simulation
         run: nix develop .#ci --command make vtest
+
+      - name: Upload Trace Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: trace_artifacts
+          path: artifacts

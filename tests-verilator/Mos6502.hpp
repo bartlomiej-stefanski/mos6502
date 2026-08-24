@@ -1,13 +1,15 @@
 #pragma once
 
+#include <fstream>
 #include <memory>
-#include <stdexcept>
 #include <optional>
 
 #include <gtest/gtest.h>
 
 #include <VtopEntity.h>
+#include <string>
 
+#include "Instructions.hpp"
 #include "Bus/MemoryBus.hpp"
 
 
@@ -26,11 +28,15 @@ public:
     Addr interrupt{};
   };
 
+  ~Mos6502();
+
 protected:
   static constexpr u64 ResetEntryCycles{5};
 
   VtopEntity* cpu{nullptr};
   std::shared_ptr< MemoryBus< Addr > > bus{nullptr};
+
+  std::optional< std::ofstream > log_output;
 
   Mos6502();
   Mos6502(JumpVector jump_vector);
@@ -92,4 +98,7 @@ protected:
 
 private:
   void setup_memory();
+
+  std::string get_flag_text();
+  std::string get_opcode_text(const OpCodeInfo& opcode_info, Addr next_pc);
 };

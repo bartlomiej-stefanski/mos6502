@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "Types.hpp"
@@ -56,6 +57,11 @@ enum class InnerStateOpcodes : u8
   TAX = 0xAA,
   TXS = 0x9A,
   TSX = 0xBA,
+
+  ASL = 0x0A,
+  ROL = 0x2A,
+  LSR = 0x4A,
+  ROR = 0x6A,
 };
 
 enum class BranchOpcodes : u8
@@ -238,6 +244,28 @@ enum class IndirectYOpcodes : u8
   CMP = 0xD1,
 };
 
+enum AddrMode {
+  IMP,  // Implied (Niejawne)
+  ACC,  // Accumulator (Akumulatorowe)
+  IMM,  // Immediate (Natychmiastowe)
+  ZP,   // Zero Page (Strona Zerowa)
+  ZPX,  // Zero Page, X
+  ZPY,  // Zero Page, Y
+  REL,  // Relative (Względne - dla skoków)
+  ABS,  // Absolute (Bezwzględne)
+  ABSX, // Absolute, X
+  ABSY, // Absolute, Y
+  IND,  // Indirect (Pośrednie)
+  INDX, // (Indirect, X)
+  INDY  // (Indirect), Y
+};
+
+struct OpCodeInfo {
+  std::string_view mnemonic;
+  AddrMode mode;
+  uint8_t bytes;
+};
+
 class Instruction
 {
   Instruction() = default;
@@ -263,6 +291,8 @@ public:
   static Instruction jumpAbsolute(Addr address);
   static Instruction jumpIndirect(Addr address);
   static Instruction jumpSoubroutine(Addr address);
+
+  static OpCodeInfo get_opcode_info(u8 opcode);
 
 private:
   std::vector< u8 > data;

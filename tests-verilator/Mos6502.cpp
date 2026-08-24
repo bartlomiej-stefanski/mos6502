@@ -1,9 +1,13 @@
 #include <vector>
+#include <print>
+#include <format>
 
 #include <gtest/gtest.h>
 
 #include "Bus/ArrayMemory.hpp"
 #include "Bus/BusDevice.hpp"
+#include "Instructions.hpp"
+#include "Types.hpp"
 #include "Mos6502.hpp"
 
 Mos6502::Mos6502() : bus(std::make_shared< MemoryBus< Addr > >(MemoryBusConfig{})) {
@@ -23,6 +27,12 @@ Mos6502::Mos6502(JumpVector jump_vector) : bus(std::make_shared< MemoryBus< Addr
       }
     ))
   );
+}
+
+Mos6502::~Mos6502() {
+  if (log_output) {
+    log_output->close();
+  }
 }
 
 void Mos6502::setup_memory()
@@ -93,9 +103,23 @@ void Mos6502::tick()
     cpu->MEM_DATA_IN = bus->get< u8 >(mem_query);
   }
 
+  const auto decoding_opcode{cpu->OPCODE_ON_BUS || cpu->OPCODE_ON_LATCH};
+  const u8 opcode{cpu->OPCODE_ON_BUS ? cpu->MEM_DATA_IN : cpu->LATCH};
+
   cpu->eval();
   cpu->CLK = 1;
   cpu->eval();
+
+  if (decoding_opcode) {
+    const OpCodeInfo opcode_info{Instruction::get_opcode_info(opcode)};
+    const auto opcode_text{get_opcode_text(opcode_info, cpu->PC - 1)};
+    const auto flags_text{get_flag_text()};
+    const auto message{std::format("{}, 0x{:02x}, 0x{:02x}, 0x{:02x}, 0x{:02x}, {}", opcode_text, cpu->PC, cpu->REG_A, cpu->REG_X, cpu->REG_Y, flags_text)};
+    NOISY("{}", message);
+    if (log_output) {
+      std::print(log_output.value(), "{}\n", message);
+    }
+  }
 }
 
 void Mos6502::tick(u64 n)
@@ -164,4 +188,57 @@ void Mos6502::expect_bus_write(Addr bus_addr, u8 data)
   EXPECT_EQ(cpu->MEM_ADDR, bus_addr);
   EXPECT_EQ(cpu->MEM_W, true);
   EXPECT_EQ(cpu->MEM_W_DATA, data);
+}
+
+std::string Mos6502::get_flag_text()
+{
+  std::string msg{};
+
+  if (cpu->NEG_AF) msg.push_back('N');
+  if (cpu->ZERO_AF) msg.push_back('Z');
+  if (cpu->CARRY_AF) msg.push_back('C');
+  if (cpu->OVF_AF) msg.push_back('V');
+  if (cpu->DEC_AF) msg.push_back('D');
+  if (cpu->BRK_F) msg.push_back('B');
+  if (cpu->INT_F) msg.push_back('I');
+
+  return msg.empty() ? "-" : msg;
+}
+
+std::string Mos6502::get_opcode_text(const OpCodeInfo& opcode_info, Addr next_pc)
+{
+  uint16_t target_addr;
+
+  switch (opcode_info.mode) {
+    case IMP:
+      return std::format("{}", opcode_info.mnemonic);
+    case ACC:
+      return std::format("{} A", opcode_info.mnemonic);
+    case IMM:
+      return std::format("{} 0x{:02x}", opcode_info.mnemonic, bus->get< u8 >(next_pc));
+    case ZP:
+      return std::format("{} $0x{:02x}", opcode_info.mnemonic, bus->get< u8 >(next_pc));
+    case ZPX:
+      return std::format("{} $0x{:02x}.X", opcode_info.mnemonic, bus->get< u8 >(next_pc));
+    case ZPY:
+      return std::format("{} $0x{:02x}.Y", opcode_info.mnemonic, bus->get< u8 >(next_pc));
+    case REL:
+      // Relative jump with signed parameter offset.
+      target_addr = (next_pc + 1) + (int8_t)bus->get< u8 >(next_pc);
+      return std::format("{} $0x{:02x}", opcode_info.mnemonic, target_addr);
+    case ABS:
+      return std::format("{} $0x{:02x}{:02x}", opcode_info.mnemonic, bus->get< u8 >(next_pc + 1), bus->get< u8 >(next_pc));
+    case ABSX:
+      return std::format("{} $0x{:02x}{:02x}.X", opcode_info.mnemonic, bus->get< u8 >(next_pc + 1), bus->get< u8 >(next_pc));
+    case ABSY:
+      return std::format("{} $0x{:02x}{:02x}.Y", opcode_info.mnemonic, bus->get< u8 >(next_pc + 1), bus->get< u8 >(next_pc));
+    case IND:
+      return std::format("{} ($0x{:02x}{:02x})", opcode_info.mnemonic, bus->get< u8 >(next_pc + 1), bus->get< u8 >(next_pc));
+    case INDX:
+      return std::format("{} ($0x{:02x}.X)", opcode_info.mnemonic, bus->get< u8 >(next_pc));
+    case INDY:
+      return std::format("{} ($0x{:02x}).Y", opcode_info.mnemonic, bus->get< u8 >(next_pc));
+  }
+
+  return "IMPOSSIBLE";
 }

@@ -4,21 +4,24 @@ VERILATOR = verilator
 SOURCEDIR := $(abspath tests-verilator)
 ALL_SOURCES := $(shell find $(SOURCEDIR) -name "*.cpp")
 
-ROM_BINARIES_DIR = $(abspath programs/.build/apps)
+ROM_BINARIES_DIR := $(abspath programs/.build/apps)
 
 VERILOG_SOURCEDIR := $(abspath verilog/DebugTopLevel.topEntity)
-BUILDDIR = $(abspath .build)
+BUILDDIR := $(abspath .build)
+ARTIFACTDIR := $(abspath artifacts)
 
 GTEST_CFLAGS := $(shell pkg-config --cflags gtest)
 GTEST_LIBS := $(shell pkg-config --libs gtest)
 
-CXXFLAGS := -std=c++23 -Wall -Wextra -I$(SOURCEDIR) $(GTEST_CFLAGS) -DROM_BINARIES_DIR='\"$(ROM_BINARIES_DIR)\"'
 LDFLAGS := $(GTEST_LIBS)
+CXXFLAGS := -std=c++23 -Wall -Wextra -I$(SOURCEDIR) $(GTEST_CFLAGS) \
+	-DROM_BINARIES_DIR='\"$(ROM_BINARIES_DIR)\"' \
+	-DARTIFACT_DIR='\"$(ARTIFACTDIR)\"'
 
-VERILATOR_IGNORE_CLASH_WARNINGS = -Wno-WIDTH -Wno-CASEINCOMPLETE -Wno-UNOPTFLAT
+VERILATOR_IGNORE_CLASH_WARNINGS := -Wno-WIDTH -Wno-CASEINCOMPLETE -Wno-UNOPTFLAT
 VERILATOR_FLAGS := $(VERILATOR_IGNORE_CLASH_WARNINGS) -j $(shell nproc) -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(LDFLAGS)"
 
-VERILATOR_SOURCES = $(wildcard $(VERILOG_SOURCEDIR)/*.v)
+VERILATOR_SOURCES := $(wildcard $(VERILOG_SOURCEDIR)/*.v)
 
 .PHONY: run clean compile-clash test-prop vtest test full programs
 .DEFAULT_GOAL := all
@@ -38,7 +41,7 @@ programs:
 
 # Re-compiles the verilator tests.
 only-tests: paths programs
-	@mkdir -p $(BUILDDIR)
+	@mkdir -p $(BUILDDIR) $(ARTIFACTDIR)
 	$(VERILATOR) --top-module topEntity --Mdir $(BUILDDIR) \
 	  $(VERILATOR_FLAGS) -I$(SOURCEDIR) --cc --build --exe \
 	  $(VERILATOR_SOURCES) \

@@ -30,9 +30,11 @@ topEntity ::
     "DEC_AF" ::: Signal System (Active High),
     "ZERO_AF" ::: Signal System (Active High),
     "CARRY_AF" ::: Signal System (Active High),
-    "LATCH" ::: Signal System Data
+    "LATCH" ::: Signal System Data,
+    "OPCODE_ON_LATCH" ::: Signal System (Active High),
+    "OPCODE_ON_BUS" ::: Signal System (Active High)
   )
-topEntity clk rst enable busInput = (memAddr, memW, memWData, pc, sp, regA, regX, regY, brkF, intF, negAF, ovfAF, decAF, zeroAF, carryAF, latch)
+topEntity clk rst enable busInput = (memAddr, memW, memWData, pc, sp, regA, regX, regY, brkF, intF, negAF, ovfAF, decAF, zeroAF, carryAF, latch, opcodeOnLatch, opcodeOnBus)
   where
     debugOutputData = withClockResetEnable clk rst enable $ debugCpuMealy (bundle (busInput, microOP))
 
@@ -48,6 +50,8 @@ topEntity clk rst enable busInput = (memAddr, memW, memWData, pc, sp, regA, regX
 
     microOP :: Signal System MicroOP
     microOP = withClockResetEnable clk rst enable $ microcodeRom microOPQuery
+
+    opcodeDecode = _opcodeDecode <$> microOP
 
     -- cpuState is 'packed into' mealy output and so it is not latched.
     -- For verilator testing stable values are needed -> latch it here.
@@ -71,5 +75,8 @@ topEntity clk rst enable busInput = (memAddr, memW, memWData, pc, sp, regA, regX
     carryAF = _carry <$> arithFlags
 
     latch = _dataLatch <$> cpuState
+
+    opcodeOnLatch = toActive <$> (==) (Just MicroOpcodeLatch) <$> opcodeDecode
+    opcodeOnBus = toActive <$> (==) (Just MicroOpcodeBus) <$> opcodeDecode
 
 makeTopEntity 'topEntity

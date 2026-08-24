@@ -30,6 +30,7 @@ verilog
 .build
 compile_commands.json
 .cache
+artifacts
 
 # Ignore Quartus Files
 c5_pin_model_dump.txt

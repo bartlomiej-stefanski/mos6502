@@ -34,3 +34,6 @@ _init:
 
   ; Jump to C runtime.
   JSR _main
+
+_loop:
+  JMP _loop

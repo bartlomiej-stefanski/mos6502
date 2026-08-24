@@ -4,6 +4,7 @@
 
 #include "Mos6502.hpp"
 #include "Instructions.hpp"
+#include "BitHelper.hpp"
 #include "Bus/InstructionMemory.hpp"
 
 constexpr Addr program_start{0x8090};
@@ -264,5 +265,52 @@ TEST_F(InnerStateInstructions, TransferOperators)
   {
     SCOPED_TRACE("TAY");
     expect_regs_change({.pc = NEXT_PC, .y = *prev_state.a});
+  }
+}
+
+TEST_F(InnerStateInstructions, ShiftAndRotate)
+{
+  bus->insert_device(
+    program_start,
+    std::unique_ptr< BusDevice >(new InstructionMemory(
+      "Program Memory",
+      {
+        Instruction::inner(InnerStateOpcodes::ASL),
+        Instruction::inner(InnerStateOpcodes::LSR),
+        Instruction::inner(InnerStateOpcodes::ROL),
+        Instruction::inner(InnerStateOpcodes::ROR),
+        Instruction::nop(),
+      }
+    ))
+  );
+
+  LoadRegisters();
+
+  tick();
+  {
+    SCOPED_TRACE("ASL");
+    expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a << 1});
+    expect_flags_change({.negative = true});
+  }
+
+  tick();
+  {
+    SCOPED_TRACE("LSR");
+    expect_regs_change({.pc = NEXT_PC, .a = *prev_state.a >> 1});
+    expect_flags_change({.negative = false});
+  }
+
+  tick();
+  {
+    SCOPED_TRACE("ROL");
+    expect_regs_change({.pc = NEXT_PC, .a = rol(*prev_state.a)});
+    expect_flags_change({.negative = true});
+  }
+
+  tick();
+  {
+    SCOPED_TRACE("ROR");
+    expect_regs_change({.pc = NEXT_PC, .a = ror(*prev_state.a)});
+    expect_flags_change({.negative = false});
   }
 }

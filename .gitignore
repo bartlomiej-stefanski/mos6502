@@ -37,6 +37,12 @@ c5_pin_model_dump.txt
 db/
 incremental_db/
 greybox_tmp/
+.qsys_edit
+dni
+qdb
+board.info
+MOS6502_final_save_view.txt
+*.tcl.history
 *.bak
 *.summary
 *.rpt
@@ -48,3 +54,15 @@ greybox_tmp/
 *.smsg
 *.jdi
 *.qws
+*.htm
+*/sim/
+*/synth/
+
+# Quartus auto-generated IP files
+hdmi_clock_pll
+agilex_5_reset_release
+output_files
+tmp-clearbox
+
+# Do not include proprietary Quartus IP
+I2C*.v

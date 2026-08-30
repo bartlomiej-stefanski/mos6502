@@ -35,3 +35,4 @@ make vtest
 - `tests-verilator` -> Verilator tests for compiled cpu
   - `tests-verilator/Programs` -> tests for compiled programs
 - `quartus` -> Project files generated for synthesis for DE-10 FPGA board
+  - At this time necesitates proprietary Altera IPs; see [#45](https://github.com/bartlomiej-stefanski/mos6502/issues/45)

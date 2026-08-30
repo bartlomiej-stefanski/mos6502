@@ -48,6 +48,7 @@ $(1): $$(BUILDDIR)/apps/$(1)/$(1).bin
 $$(BUILDDIR)/apps/$(1)/$(1).bin: $$($(1)_OBJ) $$(COMMON_OBJ)
 	@mkdir -p $$(dir $$@)
 	$(LD) $(LDFLAGS) -m $$(BUILDDIR)/apps/$(1)/$(1).map -o $$@ $$($(1)_OBJ) $$(COMMON_OBJ) none.lib
+	@xxd -b -c 1 $$@ | awk '{print $$$$2}' > $$@.txt
 	@echo "-> Application $(1) saved as $$@"
 endef
 

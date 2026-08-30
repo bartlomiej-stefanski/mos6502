@@ -97,6 +97,7 @@ library
   exposed-modules:
     TopLevel
     DebugTopLevel
+    MemoryController
     Utilities.SevenSegment
     Utilities.Utils
     Cpu.Data

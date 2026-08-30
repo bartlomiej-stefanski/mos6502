@@ -29,15 +29,18 @@ VERILATOR_SOURCES := $(wildcard $(VERILOG_SOURCEDIR)/*.v)
 paths:
 	mkdir -p $(BUILDDIR)
 
+# Compile programs with cc65.
+programs:
+	@make -C programs all
+
 # Compiles Clash CPU model to verilog code with debug outputs.
-compile-clash:
+compile-clash: programs
 	@cabal run clash DebugTopLevel -- --verilog
+	@cabal run clash TopLevel -- --verilog
+	@cabal run clash MemoryController -- --verilog
 
 # Compiles Clash to verilog and compiles tests using verilator.
 all: compile-clash only-tests
-
-programs:
-	@make -C programs all
 
 # Re-compiles the verilator tests.
 only-tests: paths programs

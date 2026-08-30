@@ -45,6 +45,7 @@
           ninja
           gcc
           pkg-config
+          xxd
           gtest
           cc65
 

@@ -1,11 +1,11 @@
 #include "BitHelper.hpp"
 
-u8 ror(u8 x)
+u8 ror(u8 x, bool carry_flag)
 {
-  return (x >> 1) | ((x & 0x1) << 7);
+  return (x >> 1) | (carry_flag << 7);
 }
 
-u8 rol(u8 x)
+u8 rol(u8 x, bool carry_flag)
 {
-  return (x << 1) | ((x & 0x80) >> 7);
+  return (x << 1) | carry_flag;
 }

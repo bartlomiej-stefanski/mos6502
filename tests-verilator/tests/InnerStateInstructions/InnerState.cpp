@@ -303,14 +303,14 @@ TEST_F(InnerStateInstructions, ShiftAndRotate)
   tick();
   {
     SCOPED_TRACE("ROL");
-    expect_regs_change({.pc = NEXT_PC, .a = rol(*prev_state.a)});
+    expect_regs_change({.pc = NEXT_PC, .a = rol(*prev_state.a, *prev_flags.carry)});
     expect_flags_change({.negative = true});
   }
 
   tick();
   {
     SCOPED_TRACE("ROR");
-    expect_regs_change({.pc = NEXT_PC, .a = ror(*prev_state.a)});
+    expect_regs_change({.pc = NEXT_PC, .a = ror(*prev_state.a, *prev_flags.carry)});
     expect_flags_change({.negative = false});
   }
 }

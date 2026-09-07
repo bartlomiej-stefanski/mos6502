@@ -135,8 +135,8 @@ alu op flags x y = (result, newFlags)
         )
       ShiftOp shiftOp ->
         let (res, shiftCarry) = case shiftOp of
-              ROR -> (bitCoerce (lowBit, highBit, middleBits), lowBit)
-              ROL -> (bitCoerce (middleBits, lowBit, highBit), highBit)
+              ROR -> (bitCoerce (carryFlag, highBit, middleBits), lowBit)
+              ROL -> (bitCoerce (middleBits, lowBit, carryFlag), highBit)
               LSR -> (bitCoerce (False, highBit, middleBits), lowBit)
               ASL -> (bitCoerce (middleBits, lowBit, False), highBit)
          in (res, flagsNZ {_carry = toActive shiftCarry})

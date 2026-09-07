@@ -335,7 +335,7 @@ TEST_F(ZeroPageXInstructions, ShiftOpTest)
   tick(3);
   {
     SCOPED_TRACE("ROL perform op");
-    expect_bus_write(256 - (rol_addr - *prev_state.x), rol(rol_addr - *prev_state.x));
+    expect_bus_write(256 - (rol_addr - *prev_state.x), rol(rol_addr - *prev_state.x, *prev_flags.carry));
   }
 
   tick(); // Decode
@@ -343,7 +343,7 @@ TEST_F(ZeroPageXInstructions, ShiftOpTest)
   tick(3);
   {
     SCOPED_TRACE("ROR perform op");
-    expect_bus_write(256 - (ror_addr - *prev_state.x), ror(ror_addr - *prev_state.x));
+    expect_bus_write(256 - (ror_addr - *prev_state.x), ror(ror_addr - *prev_state.x, *prev_flags.carry));
   }
 }
 

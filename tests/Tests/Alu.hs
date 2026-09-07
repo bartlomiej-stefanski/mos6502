@@ -229,32 +229,33 @@ prop_alu_xor = nzOpTest (BinaryOp XOR) xor
 prop_alu_id :: H.Property
 prop_alu_id = nzOpTest ID $ \_ y -> y
 
-shiftOpTest :: ALUShiftOp -> (Data -> (Data, Bool)) -> H.Property
+shiftOpTest :: ALUShiftOp -> (Data -> Data -> (Data, Bool)) -> H.Property
 shiftOpTest shiftOp opFunc = H.property do
   x <- H.forAll genData
   y <- H.forAll genData
-  let shiftAlu = alu (ShiftOp shiftOp) defaultArithmeticFlags
+  carry_in <- H.forAll Gen.bool
+  let shiftAlu = alu (ShiftOp shiftOp) $ defaultArithmeticFlags {_carry = toActive carry_in}
   let (result, flags) = shiftAlu x y
-  let (expectedResult, carryFlag) = opFunc y
+  let (expectedResult, carryFlag) = opFunc y (zeroExtend $ bitCoerce carry_in)
   let expectedFlagsCarry = defaultArithmeticFlags {_carry = toActive carryFlag}
   result H.=== expectedResult
   flags H.=== setNZ expectedFlagsCarry expectedResult
 
 prop_alu_ror :: H.Property
 prop_alu_ror = shiftOpTest ROR
-  $ \y -> (rotateR y 1, testBit y 0)
+  $ \y carryIn -> ((shiftR y 1) + (shiftL carryIn 7), testBit y 0)
 
 prop_alu_rol :: H.Property
 prop_alu_rol = shiftOpTest ROL
-  $ \y -> (rotateL y 1, testBit y 7)
+  $ \y carryIn -> ((shiftL y 1) + carryIn, testBit y 7)
 
 prop_alu_lsr :: H.Property
 prop_alu_lsr = shiftOpTest LSR
-  $ \y -> (shiftR y 1, testBit y 0)
+  $ \y _ -> (shiftR y 1, testBit y 0)
 
 prop_alu_asl :: H.Property
 prop_alu_asl = shiftOpTest ASL
-  $ \y -> (shiftL y 1, testBit y 7)
+  $ \y _ -> (shiftL y 1, testBit y 7)
 
 prop_alu_ops_do_not_change_decimal_flag :: H.Property
 prop_alu_ops_do_not_change_decimal_flag = H.property do

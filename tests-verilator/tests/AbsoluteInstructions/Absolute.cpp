@@ -442,7 +442,7 @@ TEST_F(AbsoluteInstructions, ShiftOpTest)
   tick(4);
   {
     SCOPED_TRACE("ROL perform op");
-    expect_bus_write(rol_addr, rol(rol_addr & 0xFF));
+    expect_bus_write(rol_addr, rol(rol_addr & 0xFF, *prev_flags.carry));
   }
 
   tick(); // Decode
@@ -450,7 +450,7 @@ TEST_F(AbsoluteInstructions, ShiftOpTest)
   tick(4);
   {
     SCOPED_TRACE("ROR perform op");
-    expect_bus_write(ror_addr, ror(ror_addr & 0xFF));
+    expect_bus_write(ror_addr, ror(ror_addr & 0xFF, *prev_flags.carry));
   }
 }
 

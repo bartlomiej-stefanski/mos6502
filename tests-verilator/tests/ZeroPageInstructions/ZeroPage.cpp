@@ -416,7 +416,7 @@ TEST_F(ZeroPageInstructions, ShiftOpTest)
   tick(3);
   {
     SCOPED_TRACE("ROL perform op");
-    expect_bus_write(256 - rol_addr, rol(rol_addr));
+    expect_bus_write(256 - rol_addr, rol(rol_addr, *prev_flags.carry));
   }
 
   tick(); // Decode
@@ -424,7 +424,7 @@ TEST_F(ZeroPageInstructions, ShiftOpTest)
   tick(3);
   {
     SCOPED_TRACE("ROR perform op");
-    expect_bus_write(256 - ror_addr, ror(ror_addr));
+    expect_bus_write(256 - ror_addr, ror(ror_addr, *prev_flags.carry));
   }
 }
 

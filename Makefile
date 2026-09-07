@@ -37,6 +37,7 @@ programs:
 compile-clash: programs
 	@cabal run clash DebugTopLevel -- --verilog
 	@cabal run clash TopLevel -- --verilog
+	@cabal run clash VgaDriver -- --verilog
 	@cabal run clash MemoryController -- --verilog
 
 # Compiles Clash to verilog and compiles tests using verilator.

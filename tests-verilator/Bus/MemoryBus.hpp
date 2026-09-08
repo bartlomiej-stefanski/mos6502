@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "Bus/BusDevice.hpp"
+#include "Bus/BusHelpers.hpp"
 #include "Logger.hpp"
 
 
@@ -84,10 +85,7 @@ private:
 
   template< std::integral TI >
   void validate_bus_offset(TAddr addr) {
-    const auto alignment{sizeof(TI)};
-    const auto offset{static_cast< size_t >(addr % alignment)};
-    const auto is_aligned{offset == 0};
-    if (!is_aligned) {
+    if (!is_aligned(addr, sizeof(TI))) {
       WARNING("MemoryBus: Unaligned memory access at address 0x{:x}.", addr);
       if (!config.allow_unaligned_accesses) {
         throw std::runtime_error("MemoryBus: Unaligned memory access not allowed.");

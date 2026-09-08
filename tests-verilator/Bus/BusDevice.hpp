@@ -2,11 +2,9 @@
 
 #include <concepts>
 #include <cstddef>
-#include <variant>
 #include <string>
 
 #include "Types.hpp"
-#include "Instructions.hpp"
 
 class BusDevice
 {
@@ -56,7 +54,7 @@ public:
 
   virtual size_t size() = 0;
 
-  const std::string& get_name() { return name; };
+  const std::string& get_name() const { return name; };
 
 protected:
   std::string name;

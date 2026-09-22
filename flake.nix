@@ -53,8 +53,7 @@
 
         # Packages for development shells
         devPackages = with pkgs; [
-          # Heavy FPGA Tools
-          quartus-prime-lite
+          # FPGA Tools
           openocd
 
           # GUI & Visualization
@@ -78,7 +77,7 @@
           hexedit
           socat
           minicom
-        ];
+        ] ++ ciPackages;
 
       in {
         devShells = {
@@ -87,7 +86,7 @@
           };
 
           default = pkgs.mkShell {
-            packages = ciPackages ++ devPackages;
+            packages = devPackages;
 
             OBJCACHE = "ccache";
 

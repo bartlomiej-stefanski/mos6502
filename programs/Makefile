@@ -22,7 +22,7 @@ COMMON_OBJ := $(patsubst $(ROOT)/%.c,$(BUILDDIR)/%.o,$(COMMON_C)) \
 APP_NAMES := $(notdir $(wildcard $(APPSDIR)/*))
 
 .PHONY: all clean $(BUILDDIR)
-
+.DEFAULT_GOAL := all
 
 $(BUILDDIR)/%.o: $(ROOT)/%.c
 	@mkdir -p $(dir $@)
@@ -52,10 +52,9 @@ $$(BUILDDIR)/apps/$(1)/$(1).bin: $$($(1)_OBJ) $$(COMMON_OBJ)
 	@echo "-> Application $(1) saved as $$@"
 endef
 
-
 $(foreach app,$(APP_NAMES),$(eval $(call APP_Template,$(app))))
+
+all: $(APP_NAMES)
 
 clean:
 	rm -rf $(BUILDDIR)
-
-all: $(APP_NAMES)

@@ -1,0 +1,1 @@
+../programs/.build/apps/vga_hello/vga_hello.bin.txt

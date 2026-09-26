@@ -43,7 +43,7 @@ $(1)_run: $(1)
 	$(BUILD_DIR)/$(1)/V$$($(1)_VERILOG_MODULE)
 endef
 
-ALL_CORES := DebugTopLevel
+ALL_CORES := DebugTopLevel MemoryController
 RUN_TARGETS := $(foreach app,$(ALL_CORES),$(app)_run)
 
 $(foreach app,$(ALL_CORES),$(eval $(call VTestSuite_Template,$(app))))

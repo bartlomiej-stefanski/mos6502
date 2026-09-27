@@ -21,10 +21,10 @@ topEntity clk rst enable busInput = (memAddr, memW, memWData)
   where
     directBusOp = withClockResetEnable clk rst enable $ cpuMealy (bundle (busInput, microOP))
 
-    -- directBusOp is combinational circuit output -> it must be latched to guarantee stability
-    memAddr = withClockResetEnable clk rst enable $ register 0 (_addressToQuery <$> directBusOp)
-    memW = withClockResetEnable clk rst enable $ register (toActive False) (_shouldWrite <$> directBusOp)
-    memWData = withClockResetEnable clk rst enable $ register 0 (_dataToWrite <$> directBusOp)
+    -- directBusOp is combinational circuit output, it will be latched in MemoryController
+    memAddr = _addressToQuery <$> directBusOp
+    memW = _shouldWrite <$> directBusOp
+    memWData = _dataToWrite <$> directBusOp
 
     -- microOpQuery will be latched in microcodeRom - it must pass-through here
     microOPQuery = _microOPQuery <$> directBusOp

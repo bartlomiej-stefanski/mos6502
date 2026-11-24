@@ -67,3 +67,6 @@ tmp-clearbox
 
 # Do not include proprietary Quartus IP
 I2C*.v
+
+# Ignore direnv
+.direnv
